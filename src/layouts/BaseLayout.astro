@@ -51,6 +51,7 @@ const { title = 'fight-1 · AI 学习笔记', description = 'fight-1 的 AI 学�
     </main>
     <footer class="mx-auto w-full max-w-6xl px-4 pb-10 pt-6 text-center text-sm text-muted sm:px-6">
       <p>fight-1 的 AI 学习笔记 · 由 Astro 驱动 · 内容即源码</p>
+      <p class="mt-1"><span id="visit-counter" class="visit-counter"></span></p>
     </footer>
 
     <script>
@@ -109,6 +110,7 @@ const { title = 'fight-1 · AI 学习笔记', description = 'fight-1 的 AI 学�
       import { initCryo } from '../scripts/warp.js';
       import { initComm } from '../scripts/interactions.js';
       import { initAchievements, initEaster } from '../scripts/console.js';
+      import '../scripts/visit-counter.js';
       initAudio();
       initRadar();
       // initWarp() 已关闭：克隆卡片放大→跳转的中间帧会被误认为「短暂进入新页面」，

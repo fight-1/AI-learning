@@ -31,6 +31,18 @@
 > 之后记得把 `astro.config.mjs` 里的 `SITE` 改成最终正式地址，
 > 否则 RSS 和站内绝对链接仍是 `https://fight-1.example.com` 占位值。
 
+## 二之一、访客计数器 KV 绑定（首次部署后必做）
+
+页脚显示「访客 N · 浏览 M」，由 `functions/api/visitors.js`（Cloudflare Pages Function）+ KV 实现；未绑定 KV 时计数器静默隐藏，不影响其他功能。
+
+1. Cloudflare 控制台 → `Workers & Pages` → 你的项目 → `Settings` → `Functions` → `KV variable bindings` → **Add binding**
+2. **Variable name** 填 `VISITOR_KV`（必须与代码一致），**Value** 选一个 KV namespace
+3. 若还没有 namespace：先到 `Workers & Pages` → `KV` → `Create a namespace`（如 `ai-learning-visitors`），再回来绑定
+4. 重新触发一次部署（或等待函数下次被调用即生效）
+
+- 免费额度：KV 每日 1,000 次写入 / 100,000 次读取，个人站点足够；爬虫 UA 已被过滤不计。
+- 计数逻辑：每次访问 PV+1；无 `visitor_id` Cookie 时 UV+1 并下发 1 年 Cookie。
+
 ## 三、日常发布文章
 
 ```
