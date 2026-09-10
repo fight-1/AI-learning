@@ -1,0 +1,353 @@
+---
+const skins = [
+  { id: 'cosmic', name: '星空·星海征途', c1: '#5eead4', c2: '#8b5cf6' },
+  { id: 'ink', name: '古风·墨剑江湖', c1: '#b23b2e', c2: '#2f4858' },
+  { id: 'cyber', name: '科技·赛博战甲', c1: '#38bdf8', c2: '#a78bfa' },
+  { id: 'xianxia', name: '玄幻·灵蕴修真', c1: '#7c3aed', c2: '#f59e0b' },
+  { id: 'minimal', name: '极简·素白', c1: '#3b82f6', c2: '#6366f1' },
+];
+const bgModes = {
+  cosmic: [['star', '星点'], ['galaxy', '银河'], ['meteor', '流星雨'], ['pixel', '像素星空'], ['constellation', '星座连线'], ['nebula', '星云'], ['float', '悬浮光块'], ['star+meteor', '✦ 星点+流星'], ['constellation+float', '✦ 星座+光块'], ['galaxy+pixel', '✦ 银河+像素']],
+  cyber: [['grid', '网格扫描'], ['matrix', '矩阵雨'], ['holo', '全息脉冲'], ['circuit', '电路走线'], ['hex', '六边形'], ['float', '悬浮光块'], ['grid+holo', '✦ 网格+全息'], ['matrix+holo', '✦ 矩阵+全息'], ['circuit+float', '✦ 电路+光块']],
+  xianxia: [['qi', '灵气上浮'], ['rune', '符文法阵'], ['lotus', '莲华绽放'], ['poem', '文字浮现'], ['xiangyun', '祥云云雾'], ['constellation', '星座连线'], ['rune+qi', '✦ 符文+灵气'], ['lotus+poem', '✦ 莲华+诗'], ['rune+xiangyun', '✦ 符文+祥云']],
+  ink: [['ink', '墨晕扩散'], ['landscape', '山水长卷'], ['petals', '飞花'], ['inkdot', '点墨飞溅'], ['brush', '毛笔挥毫'], ['xiangyun', '祥云'], ['yinzhang', '印章'], ['poem', '文字浮现'], ['guwen', '古文古诗'], ['ink+petals', '✦ 墨晕+飞花'], ['brush+landscape', '✦ 毛笔+山水'], ['inkdot+poem', '✦ 点墨+诗'], ['xiangyun+yinzhang', '✦ 祥云+印章']],
+  minimal: [['dust', '浮尘'], ['line', '粒子线'], ['float', '悬浮光块'], ['line+float', '✦ 粒子线+光块'], ['dust+float', '✦ 浮尘+光块']],
+};
+const defaultBg = { cosmic: 'constellation', cyber: 'matrix', xianxia: 'rune', ink: 'brush', minimal: 'float' };
+---
+
+<div class="skin-panel" data-skin-panel hidden>
+  <p class="skin-title">战甲皮肤</p>
+  <div class="skin-grid">
+    {skins.map((s) => (
+      <button class="skin-opt" data-skin-set={s.id} title={s.name} aria-label={s.name}>
+        <span class="skin-swatch" style={`background:linear-gradient(135deg, ${s.c1}, ${s.c2})`}></span>
+        <span class="skin-name">{s.name}</span>
+      </button>
+    ))}
+  </div>
+
+  <p class="skin-title" style="margin-top:12px">背景动态</p>
+  <div class="bg-modes">
+    {Object.entries(bgModes).map(([skin, modes]) => (
+      <div class="bg-group" data-bg-group={skin} hidden>
+        {modes.map(([id, label]) => (
+          <button class="bg-opt" data-bg-set={id}>{label}</button>
+        ))}
+      </div>
+    ))}
+  </div>
+
+  <p class="skin-title" style="margin-top:12px">动态交互</p>
+  <div class="fx-modes">
+    <div class="fx-row">
+      <span class="fx-lab">粒子力场</span>
+      <div class="fx-opts">
+        <button class="fx-opt" data-force-set="repel">排斥</button>
+        <button class="fx-opt" data-force-set="attract">吸引</button>
+        <button class="fx-opt" data-force-set="off">关</button>
+      </div>
+    </div>
+    <div class="fx-row">
+      <span class="fx-lab">点击动效</span>
+      <div class="fx-opts">
+        <button class="fx-opt" data-click-set="on">开</button>
+        <button class="fx-opt" data-click-set="off">关</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="skin-title" style="margin-top:12px">配色（预设 / 色轮自定义）</p>
+  <div class="pal-grid" data-palette-grid>
+    {[
+      { id: 'default', name: '跟随皮肤' },
+      { id: 'forest',  name: '森林', c1: '#3f9e6a', c2: '#2f7d55' },
+      { id: 'ocean',   name: '海洋', c1: '#2b93c8', c2: '#3b6fd4' },
+      { id: 'amber',   name: '琥珀', c1: '#d98a1f', c2: '#c26216' },
+      { id: 'crimson', name: '绛红', c1: '#c24557', c2: '#8f3f7a' },
+      { id: 'violet',  name: '紫罗兰', c1: '#8b5cf6', c2: '#a855b7' },
+    ].map((p) => (
+      <button
+        class={`pal-opt${p.c1 ? '' : ' pal-default'}`}
+        data-pal-set={p.id}
+        title={p.name}
+        aria-label={`配色 ${p.name}`}
+      >
+        <span
+          class="pal-swatch"
+          style={p.c1 ? `background:linear-gradient(135deg, ${p.c1}, ${p.c2})` : 'background:conic-gradient(#5eead4,#8b5cf6,#f59e0b,#10b981,#06b6d4,#5eead4)'}
+        ></span>
+        <span class="pal-name">{p.name}</span>
+      </button>
+    ))}
+  </div>
+
+  <div class="pal-wheel">
+    <label class="pal-row">
+      <span class="pal-lab">主色</span>
+      <input type="color" data-pal-color="accent" value="#5eead4" aria-label="主色" />
+      <code class="pal-hex" data-pal-hex="accent">#5EEAD4</code>
+    </label>
+    <label class="pal-row">
+      <span class="pal-lab">副色</span>
+      <input type="color" data-pal-color="accent2" value="#8b5cf6" aria-label="副色" />
+      <code class="pal-hex" data-pal-hex="accent2">#8B5CF6</code>
+    </label>
+    <button class="pal-reset" data-pal-reset type="button">↺ 跟随皮肤原色</button>
+  </div>
+</div>
+
+<style>
+  .skin-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 250px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    z-index: 50;
+  }
+  .skin-panel[hidden] {
+    display: none;
+  }
+  .skin-title {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .skin-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .skin-opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 13px;
+    transition: border-color 0.15s ease;
+  }
+  .skin-opt:hover {
+    border-color: var(--accent);
+  }
+  .skin-opt.is-active {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .skin-swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    flex: none;
+  }
+  .skin-name {
+    line-height: 1.2;
+  }
+  .bg-modes {
+    display: block;
+  }
+  .bg-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .bg-group[hidden] {
+    display: none;
+  }
+  .bg-opt {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .bg-opt:hover {
+    border-color: var(--accent);
+  }
+  .bg-opt.is-active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--glow);
+  }
+  /* 动态交互开关 */
+  .fx-modes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .fx-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .fx-lab {
+    width: 56px;
+    flex: none;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .fx-opts {
+    display: flex;
+    gap: 6px;
+  }
+  .fx-opt {
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .fx-opt:hover {
+    border-color: var(--accent);
+  }
+  .fx-opt.is-active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--glow);
+  }
+  .pal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .pal-opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    transition: border-color .15s;
+  }
+  .pal-opt:hover { border-color: var(--accent); }
+  .pal-opt.is-active { border-color: var(--accent); outline: 1px solid var(--accent); }
+  .pal-swatch {
+    width: 18px; height: 18px; border-radius: 5px; flex: none;
+  }
+  .pal-default .pal-swatch { width: 18px; height: 18px; border-radius: 50%; }
+  /* 色轮自定义 */
+  .pal-wheel {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .pal-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted); cursor: pointer;
+  }
+  .pal-lab { width: 28px; flex: none; }
+  .pal-row input[type='color'] {
+    width: 34px; height: 26px; padding: 0; flex: none;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: transparent; cursor: pointer;
+    -webkit-appearance: none; appearance: none;
+  }
+  .pal-row input[type='color']::-webkit-color-swatch-wrapper { padding: 2px; }
+  .pal-row input[type='color']::-webkit-color-swatch { border: none; border-radius: 4px; }
+  .pal-hex {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text); opacity: .75;
+    background: var(--surface-2); border-radius: 5px; padding: 2px 6px;
+  }
+  .pal-reset {
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--muted);
+    font-size: 12px; font-family: inherit; padding: 5px 8px; cursor: pointer;
+  }
+  .pal-reset:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .pal-reset:disabled { opacity: .4; cursor: default; }
+</style>
+
+<script>
+  import { initPalette, syncUI } from '../scripts/palette.js';
+  // 注：本脚本被 Astro inline 到组件 HTML 内，加载早于 BaseLayout 的 <script>；
+  // 两个 click listener 同时绑定在 [data-skin-set] 上时，SkinSwitcher 的先触发。
+  // 因此所有读 root.data-skin 的地方都可能拿到旧值 → 必须用 button.data-skin-set。
+  const root = document.documentElement;
+  const defaultBg = {
+    cosmic:  { dark: 'constellation', light: 'constellation' },
+    cyber:   { dark: 'matrix',        light: 'grid' },
+    xianxia: { dark: 'rune',          light: 'rune' },
+    ink:     { dark: 'brush',         light: 'brush' },
+    minimal: { dark: 'float',         light: 'float' },
+  };
+  const bgDefault = (skin, theme) => (defaultBg[skin] && (defaultBg[skin][theme] || defaultBg[skin].dark)) || 'constellation';
+  const bgGroups = document.querySelectorAll('[data-bg-group]');
+
+  // 配色工坊（预设 + 色轮自定义）：逻辑抽到 palette.js，
+  // 与舰长控制台共用同一份 localStorage 状态，两处改动互相同步。
+  initPalette();
+
+  function renderBg(skinOverride) {
+    // skinOverride 用于 click handler 显式传入 button.data-skin-set——
+    // 避免 SkinSwitcher 的 listener 先于 BaseLayout 的 setSkin 触发时，
+    // renderBg 读到旧的 root.data-skin 导致 bg-group hidden 切错。
+    const skin = skinOverride || root.getAttribute('data-skin') || 'cosmic';
+    const theme = root.getAttribute('data-theme') || 'dark';
+    const cur = root.getAttribute('data-bg') || bgDefault(skin, theme);
+    bgGroups.forEach((g) => { g.hidden = g.getAttribute('data-bg-group') !== skin; });
+    document.querySelectorAll('[data-bg-set]').forEach((b) => {
+      b.classList.toggle('is-active', b.getAttribute('data-bg-set') === cur);
+    });
+  }
+  function setBg(id, skinOverride) {
+    root.setAttribute('data-bg', id);
+    try { localStorage.setItem('bg', id); } catch (e) {}
+    renderBg(skinOverride);
+  }
+  document.querySelectorAll('[data-bg-set]').forEach((b) => {
+    b.addEventListener('click', (e) => { e.stopPropagation(); setBg(b.getAttribute('data-bg-set')); });
+  });
+  // 配色交互由 palette.js 的事件委托统一处理（预设 / 色轮 / 复位）
+  // 切换皮肤时，若当前背景模式不属于该皮肤则重置为该皮肤当前明暗的默认
+  document.querySelectorAll('[data-skin-set]').forEach((b) => {
+    b.addEventListener('click', () => {
+      // 关键：使用 button 上的 skin 而不是 root.getAttribute('data-skin')，
+      // 否则 BaseLayout 的 setSkin listener 还没改 root 时就跑了。
+      const skin = b.getAttribute('data-skin-set');
+      const theme = root.getAttribute('data-theme') || 'dark';
+      const valid = Array.from(document.querySelectorAll(`[data-bg-group="${skin}"] [data-bg-set]`)).map((x) => x.getAttribute('data-bg-set'));
+      if (!valid.includes(root.getAttribute('data-bg'))) setBg(bgDefault(skin, theme), skin);
+      else renderBg(skin);
+      // 换皮肤后「跟随皮肤」色轮的取色基准变了，回填显示值
+      setTimeout(syncUI, 0);
+    });
+  });
+  // 兼容：localStorage 改 data-skin 后（深链/外部 trigger）也能刷新 bg-group
+  new MutationObserver(() => {
+    // 仅在 root.data-skin 真实变化时刷新；初次绑定不触发
+    renderBg();
+  }).observe(root, { attributes: true, attributeFilter: ['data-skin'] });
+
+  // 动态交互开关：粒子力场（排斥/吸引/关）、点击动效（开/关）
+  function setForce(v) { root.setAttribute('data-bg-force', v); try { localStorage.setItem('bg_force', v); } catch (e) {} reflectForce(); }
+  function setClick(v) { root.setAttribute('data-bg-click', v); try { localStorage.setItem('bg_click', v); } catch (e) {} reflectClick(); }
+  function reflectForce() { const v = root.getAttribute('data-bg-force') || 'repel'; document.querySelectorAll('[data-force-set]').forEach((b) => b.classList.toggle('is-active', b.getAttribute('data-force-set') === v)); }
+  function reflectClick() { const v = root.getAttribute('data-bg-click') || 'on'; document.querySelectorAll('[data-click-set]').forEach((b) => b.classList.toggle('is-active', b.getAttribute('data-click-set') === v)); }
+  document.querySelectorAll('[data-force-set]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); setForce(b.getAttribute('data-force-set')); }));
+  document.querySelectorAll('[data-click-set]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); setClick(b.getAttribute('data-click-set')); }));
+  reflectForce();
+  reflectClick();
+  renderBg();
+</script>

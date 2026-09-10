@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="收藏 · fight-1">
+  <h1>我的收藏</h1>
+  <p class="muted">本地收藏，只存在你的浏览器里，不会上传。</p>
+  <div id="fav-list" class="grid"></div>
+  <p id="empty" class="muted" hidden>还没有收藏。在任意笔记卡片上点 ☆ 即可加入。</p>
+</BaseLayout>
+
+<style>
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .muted { color: var(--muted); }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 18px;
+  }
+  .item {
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .item a { color: var(--text); font-size: 16px; font-weight: 600; }
+  .item a:hover { color: var(--accent); text-decoration: none; }
+  .item .s { color: var(--muted); font-size: 13px; margin-top: 6px; }
+</style>
+
+<script>
+  const list = document.getElementById('fav-list');
+  const empty = document.getElementById('empty');
+  const favs = JSON.parse(localStorage.getItem('favs') || '[]');
+  fetch('/search.json')
+    .then((r) => r.json())
+    .then((idx) => {
+      const items = idx.filter((n) => favs.includes(n.id));
+      if (items.length === 0) {
+        empty.hidden = false;
+        return;
+      }
+      list.innerHTML = items
+        .map(
+          (n) => `
+        <div class="item">
+          <a href="${n.url}">${n.title}</a>
+          <div class="s"># ${n.category} · ${n.date}</div>
+        </div>`
+        )
+        .join('');
+    });
+</script>

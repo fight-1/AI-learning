@@ -1,0 +1,411 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Toc from '../../components/Toc.astro';
+import { getNotes, formatDate, readingTime } from '../../lib/notes';
+import type { GetStaticPaths } from 'astro';
+
+export const getStaticPaths = (async () => {
+  const notes = await getNotes();
+  return notes.map((note, i) => ({
+    params: { slug: note.id },
+    props: {
+      note,
+      prev: i > 0 ? notes[i - 1] : null,
+      next: i < notes.length - 1 ? notes[i + 1] : null,
+    },
+  }));
+}) satisfies GetStaticPaths;
+
+const { note, prev, next } = Astro.props;
+const { Content, headings } = await render(note);
+const { title, date, category, tags, summary } = note.data;
+const minutes = readingTime(note.body || '');
+---
+
+<BaseLayout title={`${title} · fight-1`} description={summary}>
+  <div class="progress" id="progress"></div>
+
+  <article class="detail">
+    <nav class="detail-crumbs" aria-label="面包屑">
+      <a href="/notes" class="crumb-back" data-astro-prefetch>← 笔记列表</a>
+      <span class="crumb-sep">/</span>
+      {category && (
+        <>
+          <a href={`/notes?category=${encodeURIComponent(category)}`} class="crumb-cat" data-astro-prefetch># {category}</a>
+          <span class="crumb-sep">/</span>
+        </>
+      )}
+      <span class="crumb-title">{title}</span>
+    </nav>
+    <header class="detail-head">
+      <div class="meta">
+        <a class="chip" href={`/notes?category=${encodeURIComponent(category)}`}># {category}</a>
+        <time>{formatDate(date)}</time>
+        <span>· 约 {minutes} 分钟</span>
+        <button class="like-btn" type="button" data-like={note.id} aria-label="注入能量">
+          <span class="reactor">⚛</span> 注入能量
+        </button>
+        <button class="fav-btn fav-inline" type="button" data-fav={note.id}>☆ 收藏</button>
+      </div>
+      <h1>{title}</h1>
+      <p class="lead">{summary}</p>
+      <div class="tags">
+        {tags.map((t) => <a class="chip" href={`/notes?tag=${encodeURIComponent(t)}`}># {t}</a>)}
+      </div>
+    </header>
+
+    <div class="detail-body">
+      <div class="content prose">
+        <Content />
+      </div>
+      <aside class="side">
+        <Toc headings={headings} />
+      </aside>
+    </div>
+
+    <nav class="pager">
+      {prev ? <a class="pager-link prev" href={`/notes/${prev.id}`}><span>← 上一篇</span><b>{prev.data.title}</b></a> : <span></span>}
+      {next ? <a class="pager-link next" href={`/notes/${next.id}`}><span>下一篇 →</span><b>{next.data.title}</b></a> : <span></span>}
+    </nav>
+
+    <!-- 星际广播：评论区 -->
+    <section class="comm-channel">
+      <h2>📻 通讯频道</h2>
+      <p class="muted">发表评论即向星际广播，讯息以抛物线落入频道。</p>
+      <form id="comm-form">
+        <input id="comm-input" type="text" placeholder="向星际广播一条讯息…" autocomplete="off" />
+        <button type="submit">发送</button>
+      </form>
+      <div id="comm-list"></div>
+    </section>
+  </article>
+</BaseLayout>
+
+<script>
+  // 通讯频道：本地持久化 + 嵌套回复（树形）
+  (function () {
+    const id = location.pathname;
+    const KEY = 'comm:' + id;
+    const list = document.getElementById('comm-list');
+    const form = document.getElementById('comm-form');
+    const input = document.getElementById('comm-input');
+    if (!list || !form) return;
+
+    const esc = (s) =>
+      String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const load = () => {
+      try {
+        return JSON.parse(localStorage.getItem(KEY) || '[]');
+      } catch (e) {
+        return [];
+      }
+    };
+    const save = (a) => localStorage.setItem(KEY, JSON.stringify(a));
+    let uid = Date.now();
+    const newId = () => 'c' + uid++;
+
+    function render() {
+      const items = load();
+      const byId = new Map(items.map((c) => [c.id, { ...c, children: [] }]));
+      const roots = [];
+      for (const c of byId.values()) {
+        if (c.parent && byId.has(c.parent)) byId.get(c.parent).children.push(c);
+        else roots.push(c);
+      }
+      roots.sort((a, b) => (b.ts || 0) - (a.ts || 0)); // 顶层：新在上
+      const sortCh = (arr) => {
+        arr.sort((a, b) => (a.ts || 0) - (b.ts || 0)); // 回复：旧在上
+        arr.forEach((c) => sortCh(c.children));
+      };
+      sortCh(roots);
+      const walk = (node, depth) => {
+        const pad = Math.min(depth, 5) * 18;
+        const replies = node.children.map((ch) => walk(ch, depth + 1)).join('');
+        return `<div class="comment-bubble" data-cid="${node.id}" style="margin-left:${pad}px">
+          <div class="cb-head"><b>${esc(node.n)}</b><span class="cb-time">${esc(node.t)}</span></div>
+          <div class="cb-body" data-body="${node.id}">${esc(node.m)}</div>
+          <div class="cb-actions">
+            <button class="cb-reply" type="button" data-reply="${node.id}">回复</button>
+            <button class="cb-edit" type="button" data-edit="${node.id}">编辑</button>
+            <button class="cb-del" type="button" data-del="${node.id}">删除</button>
+          </div>
+          <div class="cb-replybox" data-box="${node.id}" hidden>
+            <input class="cb-input" type="text" placeholder="回复 ${esc(node.n)}…" autocomplete="off" />
+            <button class="cb-send" type="button" data-send="${node.id}">发送</button>
+          </div>
+          <div class="cb-editbox" data-editbox="${node.id}" hidden>
+            <textarea class="cb-editarea" rows="2">${esc(node.m)}</textarea>
+            <div class="cb-editrow">
+              <button class="cb-save" type="button" data-save="${node.id}">保存</button>
+              <button class="cb-cancel" type="button" data-cancel="${node.id}">取消</button>
+            </div>
+          </div>
+          ${replies}
+        </div>`;
+      };
+      list.innerHTML =
+        roots.map((r) => walk(r, 0)).join('') ||
+        '<p class="muted" style="opacity:.7">暂无讯息，向星际广播第一条吧。</p>';
+    }
+
+    render();
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = input.value.trim();
+      if (!v) return;
+      const items = load();
+      items.push({ id: newId(), parent: null, n: '舰长 fight-1', t: new Date().toLocaleString('zh-CN'), m: v, ts: Date.now() });
+      save(items);
+      input.value = '';
+      render();
+      document.dispatchEvent(new CustomEvent('comm:sent'));
+    });
+
+    list.addEventListener('click', (e) => {
+      const rb = e.target.closest('[data-reply]');
+      if (rb) {
+        const cid = rb.dataset.reply;
+        const box = list.querySelector(`[data-box="${cid}"]`);
+        if (!box) return;
+        const wasOpen = !box.hidden;
+        list.querySelectorAll('.cb-replybox').forEach((b) => (b.hidden = true));
+        list.querySelectorAll('.cb-editbox').forEach((b) => (b.hidden = true));
+        box.hidden = wasOpen;
+        if (!wasOpen) box.querySelector('.cb-input').focus();
+        return;
+      }
+      const sb = e.target.closest('[data-send]');
+      if (sb) {
+        const cid = sb.dataset.send;
+        const box = list.querySelector(`[data-box="${cid}"]`);
+        const val = box.querySelector('.cb-input').value.trim();
+        if (!val) return;
+        const items = load();
+        items.push({ id: newId(), parent: cid, n: '舰长 fight-1', t: new Date().toLocaleString('zh-CN'), m: val, ts: Date.now() });
+        save(items);
+        render();
+        document.dispatchEvent(new CustomEvent('comm:sent'));
+        return;
+      }
+      // 编辑：显示编辑框
+      const eb = e.target.closest('[data-edit]');
+      if (eb) {
+        const cid = eb.dataset.edit;
+        list.querySelectorAll('.cb-replybox').forEach((b) => (b.hidden = true));
+        const box = list.querySelector(`[data-editbox="${cid}"]`);
+        if (!box) return;
+        list.querySelectorAll('.cb-editbox').forEach((b) => (b.hidden = true));
+        box.hidden = false;
+        const ta = box.querySelector('.cb-editarea');
+        ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+        return;
+      }
+      // 取消编辑
+      const cb = e.target.closest('[data-cancel]');
+      if (cb) {
+        const box = list.querySelector(`[data-editbox="${cb.dataset.cancel}"]`);
+        if (box) box.hidden = true;
+        return;
+      }
+      // 保存编辑
+      const sv = e.target.closest('[data-save]');
+      if (sv) {
+        const cid = sv.dataset.save;
+        const box = list.querySelector(`[data-editbox="${cid}"]`);
+        const val = box.querySelector('.cb-editarea').value.trim();
+        if (!val) return;
+        const items = load();
+        const it = items.find((x) => x.id === cid);
+        if (it) { it.m = val; it.edited = new Date().toLocaleString('zh-CN'); }
+        save(items);
+        render();
+        return;
+      }
+      // 删除
+      const dl = e.target.closest('[data-del]');
+      if (dl) {
+        const cid = dl.dataset.del;
+        if (!confirm('确定删除这条讯息？子回复也会一并删除。')) return;
+        const items = load();
+        // 收集要删除的 id（自己 + 所有后代）
+        const byId = new Map(items.map((c) => [c.id, c]));
+        const toDel = new Set([cid]);
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const c of items) {
+            if (c.parent && toDel.has(c.parent) && !toDel.has(c.id)) { toDel.add(c.id); changed = true; }
+          }
+        }
+        save(items.filter((c) => !toDel.has(c.id)));
+        render();
+        return;
+      }
+    });
+  })();
+</script>
+
+<style>
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0;
+    background: var(--accent);
+    z-index: 60;
+    box-shadow: 0 0 8px var(--glow);
+  }
+  .detail-head {
+    margin-bottom: 24px;
+  }
+  /* 面包屑：始终可见的「← 笔记列表」回退入口，与历史栈解耦 */
+  .detail-crumbs {
+    position: sticky;
+    top: 64px;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    margin: -10px -14px 20px;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .crumb-back {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--accent-color);
+    transition: background 0.2s, color 0.2s;
+  }
+  .crumb-back:hover {
+    background: var(--accent-color);
+    color: var(--bg);
+    text-decoration: none;
+  }
+  .crumb-sep {
+    color: var(--muted);
+    opacity: 0.5;
+  }
+  .crumb-cat {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px dashed var(--border);
+  }
+  .crumb-cat:hover {
+    color: var(--accent);
+    border-color: var(--accent-color);
+    text-decoration: none;
+  }
+  .crumb-title {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .fav-inline {
+    position: static;
+    margin-left: auto;
+  }
+  .detail-head h1 {
+    font-size: clamp(24px, 4vw, 34px);
+    margin: 0 0 10px;
+    line-height: 1.25;
+  }
+  .lead {
+    color: var(--muted);
+    margin: 0 0 12px;
+    font-size: 15px;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .detail-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 32px;
+    align-items: start;
+  }
+  .content {
+    min-width: 0;
+  }
+  .side {
+    border-left: 1px solid var(--border);
+    padding-left: 4px;
+  }
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .pager-link {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 48%;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .pager-link.next {
+    text-align: right;
+    margin-left: auto;
+  }
+  .pager-link b {
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .pager-link:hover {
+    text-decoration: none;
+  }
+  .pager-link:hover b {
+    color: var(--accent);
+  }
+  @media (max-width: 860px) {
+    .detail-body {
+      grid-template-columns: 1fr;
+    }
+    .side {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const bar = document.getElementById('progress');
+  const art = document.querySelector('.detail');
+  function update() {
+    if (!bar || !art) return;
+    const h = art.getBoundingClientRect().height - window.innerHeight;
+    const scrolled = Math.min(Math.max(-art.getBoundingClientRect().top + 80, 0), h);
+    const pct = h > 0 ? (scrolled / h) * 100 : 0;
+    bar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+</script>

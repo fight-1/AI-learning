@@ -1,0 +1,124 @@
+---
+import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+import SkinSwitcher from '../components/SkinSwitcher.astro';
+
+const { title = 'fight-1 · AI 学习笔记', description = 'fight-1 的 AI 学习资料汇总：Agent / Skill / MCP / LLM / Token 优化 / UI 设计 …' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="zh-CN" data-skin="cosmic" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+    <script is:inline>
+      (function () {
+        try {
+          var root = document.documentElement;
+          var s = localStorage.getItem('skin') || 'cosmic';
+          var t = localStorage.getItem('theme');
+          if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          root.setAttribute('data-skin', s);
+          root.setAttribute('data-theme', t);
+          // 首次进入若没有记忆的背景，按皮肤×明暗选最契合的默认（避免 FOUC）
+          var bgMap = {
+            cosmic:  { dark: 'constellation', light: 'constellation' },
+            cyber:   { dark: 'matrix',        light: 'grid' },
+            xianxia: { dark: 'rune',          light: 'rune' },
+            ink:     { dark: 'brush',         light: 'brush' },
+            minimal: { dark: 'float',         light: 'float' },
+          };
+          var b = localStorage.getItem('bg');
+          var defBg = (bgMap[s] && (bgMap[s][t] || bgMap[s].dark)) || 'constellation';
+          root.setAttribute('data-bg', b || defBg);
+          // 动态交互默认：粒子力场（排斥）/ 点击动效 全局开启
+          root.setAttribute('data-bg-force', localStorage.getItem('bg_force') || 'repel');
+          root.setAttribute('data-bg-click', localStorage.getItem('bg_click') || 'on');
+          root.classList.add('no-trans');
+          window.addEventListener('load', function () { root.classList.remove('no-trans'); });
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <canvas id="bg"></canvas>
+    <Nav />
+    <main class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      <slot />
+    </main>
+    <footer class="mx-auto w-full max-w-6xl px-4 pb-10 pt-6 text-center text-sm text-muted sm:px-6">
+      <p>fight-1 的 AI 学习笔记 · 由 Astro 驱动 · 内容即源码</p>
+    </footer>
+
+    <script>
+      const root = document.documentElement;
+      function setSkin(s) {
+        root.setAttribute('data-skin', s);
+        try { localStorage.setItem('skin', s); } catch (e) {}
+        markActive();
+      }
+      function setTheme(t) {
+        root.setAttribute('data-theme', t);
+        try { localStorage.setItem('theme', t); } catch (e) {}
+        updateThemeIcon();
+      }
+      function markActive() {
+        const cur = root.getAttribute('data-skin');
+        document.querySelectorAll('[data-skin-set]').forEach((b) => {
+          b.classList.toggle('is-active', b.getAttribute('data-skin-set') === cur);
+        });
+      }
+      function updateThemeIcon() {
+        const i = document.querySelector('[data-theme-toggle]');
+        if (i) i.textContent = root.getAttribute('data-theme') === 'dark' ? '☀' : '☾';
+      }
+      document.querySelectorAll('[data-skin-set]').forEach((b) => {
+        b.addEventListener('click', () => setSkin(b.getAttribute('data-skin-set')));
+      });
+      const tt = document.querySelector('[data-theme-toggle]');
+      if (tt) tt.addEventListener('click', () => {
+        setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+      });
+      const trig = document.querySelector('[data-skin-trigger]');
+      const panel = document.querySelector('[data-skin-panel]');
+      if (trig && panel) {
+        trig.addEventListener('click', (e) => {
+          e.stopPropagation();
+          panel.hidden = !panel.hidden;
+        });
+        document.addEventListener('click', (e) => {
+          if (!panel.contains(e.target) && !trig.contains(e.target)) panel.hidden = true;
+        });
+      }
+      markActive();
+      updateThemeIcon();
+    </script>
+
+    <button id="to-top" aria-label="返回顶部">↑</button>
+
+    <script>
+      import '../scripts/bg.js';
+      import '../scripts/fx.js';
+      import '../scripts/cursor.js';
+      import '../scripts/landing.js';
+      import { initAudio, blipThrottled, panFromX } from '../scripts/audio.js';
+      import { initRadar } from '../scripts/radar.js';
+      import { initCryo } from '../scripts/warp.js';
+      import { initComm } from '../scripts/interactions.js';
+      import { initAchievements, initEaster } from '../scripts/console.js';
+      initAudio();
+      initRadar();
+      // initWarp() 已关闭：克隆卡片放大→跳转的中间帧会被误认为「短暂进入新页面」，
+      // 体感割裂阅读流。改为原生即时跳转；保留导出 initWarp 以便日后控制台启用。
+      initCryo();
+      initComm();
+      initAchievements();
+      initEaster();
+      // 星际广播发送音效
+      document.addEventListener('comm:sent', () => blipThrottled(760, 0));
+    </script>
+  </body>
+</html>
