@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.astro/
+.cache/
+.output/
+
+# 本地环境与日志
+.env
+.env.*
+npm-debug.log*
+yarn-error.log*
+
+# Agent 本地会话/记忆数据（不发布到线上仓库）
+.workbuddy/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
