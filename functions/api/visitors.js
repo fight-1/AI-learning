@@ -1,6 +1,6 @@
 // Cloudflare Pages Function: /api/visitors
 // GET  -> 返回当前 { pv, uv }
-// POST -> 浏览量 +1；无 visitor_id cookie 时访客数 +1，并下发 cookie（1 年）
+// POST -> 浏览量 +1；当天首次访问（按北京时间日期去重）访客数 +1，并下发 visitor_day cookie
 // 机器人 UA 不计入。需在 Pages 项目绑定 KV，变量名固定为 VISITOR_KV。
 
 function json(data, extra) {
@@ -22,6 +22,11 @@ async function readStats(env) {
   }
 }
 
+// 北京时间（GMT+8）日期字符串 YYYY-MM-DD
+function beijingDate() {
+  return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
 export async function onRequestGet({ env }) {
   return json(await readStats(env));
 }
@@ -32,20 +37,24 @@ export async function onRequestPost({ request, env }) {
     return json(await readStats(env)); // 爬虫不计
   }
   const cookie = request.headers.get('Cookie') || '';
-  const hadVisitor = /(^|;\s*)visitor_id=/.test(cookie);
+  const today = beijingDate();
+  // 取浏览器上次计入 UV 的日期（北京时间）
+  const m = cookie.match(/(?:^|;\s*)visitor_day=([0-9]{4}-[0-9]{2}-[0-9]{2})/);
+  const lastDay = m ? m[1] : '';
+  const isNewDay = lastDay !== today; // 当天首次访问才计一次 UV
+
   const stats = await readStats(env);
   if (stats.noKV) return json(stats);
+
   stats.pv = (stats.pv || 0) + 1;
-  if (!hadVisitor) stats.uv = (stats.uv || 0) + 1;
+  if (isNewDay) stats.uv = (stats.uv || 0) + 1;
   await env.VISITOR_KV.put('stats', JSON.stringify(stats));
+
   const headers = {};
-  if (!hadVisitor) {
-    const id =
-      globalThis.crypto && crypto.randomUUID
-        ? crypto.randomUUID()
-        : String(Date.now()) + Math.random().toString(16).slice(2);
+  if (isNewDay) {
+    // Cookie 标记今天已计入；跨天（北京时间）后自动重新计数
     headers['Set-Cookie'] =
-      'visitor_id=' + id + '; Path=/; Max-Age=31536000; SameSite=Lax';
+      'visitor_day=' + today + '; Path=/; Max-Age=86400; SameSite=Lax';
   }
   return json(stats, headers);
 }
