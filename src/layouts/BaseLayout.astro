@@ -3,7 +3,25 @@ import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import SkinSwitcher from '../components/SkinSwitcher.astro';
 
-const { title = 'fight-1 · AI 学习笔记', description = 'fight-1 的 AI 学习资料汇总：Agent / Skill / MCP / LLM / Token 优化 / UI 设计 …' } = Astro.props;
+const {
+  title = 'fight-1 · AI 学习笔记',
+  description = 'fight-1 的 AI 学习资料汇总：Agent / Skill / MCP / LLM / Token 优化 / UI 设计 …',
+  ogImage = '/og-default.svg',
+  ogType = 'website',
+  noindex = false,
+} = Astro.props;
+
+const siteName = 'fight-1 的 AI 学习笔记';
+const canonical = Astro.url.href;
+const ogImageUrl = new URL(ogImage, Astro.site).href;
+// 站点级结构化数据（每页复用）
+const websiteLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteName,
+  url: Astro.site?.href,
+  description,
+};
 ---
 
 <!doctype html>
@@ -14,6 +32,20 @@ const { title = 'fight-1 · AI 学习笔记', description = 'fight-1 的 AI 学�
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
+    <link rel="canonical" href={canonical} />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <script type="application/ld+json" set:html={JSON.stringify(websiteLd)} />
     <script is:inline>
       (function () {
         try {

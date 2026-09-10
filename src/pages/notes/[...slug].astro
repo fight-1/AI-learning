@@ -19,11 +19,26 @@ export const getStaticPaths = (async () => {
 
 const { note, prev, next } = Astro.props;
 const { Content, headings } = await render(note);
-const { title, date, category, tags, summary } = note.data;
+const { title, date, category, tags, summary, cover } = note.data;
 const minutes = readingTime(note.body || '');
+const siteName = 'fight-1 的 AI 学习笔记';
+const ogImage = cover ? new URL(cover, Astro.site).href : '/og-default.svg';
+const articleLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description: summary,
+  datePublished: date.toISOString(),
+  dateModified: date.toISOString(),
+  author: { '@type': 'Person', name: 'fight-1' },
+  keywords: tags.join(', '),
+  mainEntityOfPage: { '@type': 'WebPage', '@id': Astro.url.href },
+  publisher: { '@type': 'Organization', name: siteName },
+  image: new URL(ogImage, Astro.site).href,
+};
 ---
 
-<BaseLayout title={`${title} · fight-1`} description={summary}>
+<BaseLayout title={`${title} · fight-1`} description={summary} ogImage={ogImage} ogType="article">
   <div class="progress" id="progress"></div>
 
   <article class="detail">
@@ -81,6 +96,8 @@ const minutes = readingTime(note.body || '');
     </section>
   </article>
 </BaseLayout>
+
+<script type="application/ld+json" set:html={JSON.stringify(articleLd)} />
 
 <script>
   // 通讯频道：本地持久化 + 嵌套回复（树形）
