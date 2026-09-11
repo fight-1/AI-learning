@@ -78,7 +78,7 @@ import { POEMS } from '../lib/poems.ts';
    */
   const perf = {
     level: 0, frames: 0, acc: 0, lowStreak: 0, okStreak: 0,
-    dprCap: 2, partFactor: 1, overlayOff: false, origMode: null, lastFps: 0,
+    dprCap: 2, partFactor: 1, forceOff: false, origMode: null, lastFps: 0,
   };
   const PART_FACTOR = [1, 0.6, 0.4, 0.4];
   const DPR_CAP = [2, 2, 1, 1];
@@ -86,7 +86,9 @@ import { POEMS } from '../lib/poems.ts';
   function applyPerfLevel() {
     perf.partFactor = PART_FACTOR[perf.level];
     perf.dprCap = DPR_CAP[perf.level];
-    perf.overlayOff = perf.level >= 3;
+    // L3 只关「粒子力场」（每帧遍历全部粒子，最贵）。
+    // 点击涟漪只在点击后短暂存在，比力场便宜得多，保留以维持交互手感。
+    perf.forceOff = perf.level >= 3;
     resize(); // 重算 DPR + 按新系数重建粒子
     const ro = document.documentElement;
     if (perf.level >= 3) {
@@ -1172,7 +1174,7 @@ import { POEMS } from '../lib/poems.ts';
         fps: perf.lastFps,
         partFactor: perf.partFactor,
         dprCap: perf.dprCap,
-        overlayOff: perf.overlayOff,
+        forceOff: perf.forceOff,
       };
     },
   };
@@ -1234,9 +1236,9 @@ import { POEMS } from '../lib/poems.ts';
     last = t;
     sampleFps(dt);
     current.frame(t, dt);
-    // 深度降级（L3）时关闭叠加层：力场粒子与点击爆发
-    if (settings.force !== 'off' && !perf.overlayOff) fx.forceFrame(t, dt);
-    if (settings.click !== 'off' && !perf.overlayOff) fx.burstFrame(t, dt);
+    // L3 降级只关粒子力场；点击涟漪始终渲染（否则 bursts 既看不见也不会被回收 → 泄漏）
+    if (settings.force !== 'off' && !perf.forceOff) fx.forceFrame(t, dt);
+    if (settings.click !== 'off') fx.burstFrame(t, dt);
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);

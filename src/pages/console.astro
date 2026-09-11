@@ -130,6 +130,13 @@ const bgModes = {
       <input type="checkbox" id="focus-toggle" />
       <span>专注阅读模式（隐藏背景动效、加宽正文，长文更沉浸）</span>
     </label>
+    <label class="setting setting-row">
+      <span>专注阅读正文对齐</span>
+      <select id="focus-align" aria-label="专注阅读正文对齐">
+        <option value="left">居左（默认）</option>
+        <option value="center">居中</option>
+      </select>
+    </label>
     <p class="sub">系统开启"减少动态效果"时，全站动效会自动降级为静态排版。</p>
   </section>
 </BaseLayout>
@@ -162,6 +169,13 @@ const bgModes = {
   }
   .cbg-opt.is-active { border-color: var(--accent-color); color: var(--accent-color); }
   .setting { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .setting-row { justify-content: space-between; }
+  .setting-row select {
+    padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--text);
+    font-size: 13px; font-family: inherit; cursor: pointer;
+  }
+  .setting-row select:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 1px; }
 
   /* 配色工坊 */
   .sub-t { font-size: 12px; color: var(--text); opacity: .8; margin: 16px 0 8px; font-weight: 600; }
@@ -304,6 +318,21 @@ const bgModes = {
       else {
         root.setAttribute('data-focus', fz.checked ? 'on' : 'off');
         try { localStorage.setItem('focus', fz.checked ? 'on' : 'off'); } catch (e) {}
+      }
+    });
+  }
+
+  // 专注阅读正文对齐：居左（默认）/ 居中
+  const faSel = document.getElementById('focus-align');
+  if (faSel) {
+    const cur = () => (window.__getFocusAlign ? window.__getFocusAlign() : (localStorage.getItem('focus_align') === 'center' ? 'center' : 'left'));
+    faSel.value = cur();
+    faSel.addEventListener('change', () => {
+      if (window.__setFocusAlign) window.__setFocusAlign(faSel.value);
+      else {
+        const a = faSel.value === 'center' ? 'center' : 'left';
+        root.setAttribute('data-focus-align', a);
+        try { localStorage.setItem('focus_align', a); } catch (e) {}
       }
     });
   }

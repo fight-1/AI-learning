@@ -60,8 +60,10 @@ const websiteLd = {
           function resolveTheme(v){ if(!v || v==='auto') return mqLight.matches ? 'light':'dark'; return v; }
           root.setAttribute('data-skin', s);
           root.setAttribute('data-theme', resolveTheme(tRaw));
-          // 专注阅读模式
+          // 专注阅读模式（对齐方式：默认居左，可选居中）
           if ((localStorage.getItem('focus') || 'off') === 'on') root.setAttribute('data-focus', 'on');
+          var fa = localStorage.getItem('focus_align');
+          root.setAttribute('data-focus-align', fa === 'center' ? 'center' : 'left');
           // 首次进入若没有记忆的背景，按皮肤×明暗选最契合的默认（避免 FOUC）
           var bgMap = {
             cosmic:  { dark: 'constellation', light: 'constellation' },
@@ -154,6 +156,16 @@ const websiteLd = {
       window.__setFocus = function (on) {
         root.setAttribute('data-focus', on ? 'on' : 'off');
         try { localStorage.setItem('focus', on ? 'on' : 'off'); } catch (e) {}
+      };
+      // 专注模式对齐：'left'（默认）| 'center'
+      window.__setFocusAlign = function (v) {
+        const a = v === 'center' ? 'center' : 'left';
+        root.setAttribute('data-focus-align', a);
+        try { localStorage.setItem('focus_align', a); } catch (e) {}
+        return a;
+      };
+      window.__getFocusAlign = function () {
+        return root.getAttribute('data-focus-align') || (localStorage.getItem('focus_align') === 'center' ? 'center' : 'left');
       };
       // 搜索快捷键：按 / 聚焦搜索（输入框内不触发）
       document.addEventListener('keydown', (e) => {

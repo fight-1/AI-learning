@@ -1154,6 +1154,9 @@ body.cryo-mode main::before {
 }
 .share-btn[data-share="copy"] { font-size: 15px; }
 .share-btn.copied { color: var(--accent-2); border-color: var(--accent-2); }
+/* 「⤓ MD」是 <a> 下载链接，复用按钮外观需去掉下划线 */
+.share-btn.share-link { text-decoration: none; }
+.share-btn.share-link:hover { text-decoration: none; }
 /* 复制提示 toast */
 .share-toast {
   position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px);
@@ -1191,7 +1194,10 @@ body.cryo-mode main::before {
 html[data-focus='on'] #bg { display: none !important; }
 html[data-focus='on'] .detail-body { grid-template-columns: 1fr; }
 html[data-focus='on'] .side { display: none; }
-html[data-focus='on'] .content { max-width: 720px; margin: 0 auto; }
+html[data-focus='on'] .content { max-width: 720px; }
+/* 专注模式正文对齐：默认居左，可在控制台/文章页切换为居中 */
+html[data-focus='on'][data-focus-align='left'] .content { margin: 0; }
+html[data-focus='on'][data-focus-align='center'] .content { margin: 0 auto; }
 html[data-focus='on'] .comm-channel,
 html[data-focus='on'] .giscus { opacity: 0.6; }
 

@@ -111,6 +111,7 @@ const breadcrumbLd = {
         </button>
         <button class="fav-btn fav-inline" type="button" data-fav={note.id}>☆ 收藏</button>
         <button class="focus-btn fav-inline" type="button" id="focus-toggle">专注阅读</button>
+        <button class="focus-btn fav-inline" type="button" id="focus-align-toggle" title="切换专注阅读正文对齐（居左 / 居中）" aria-label="切换专注阅读正文对齐">正文居左</button>
       </div>
       <h1>{title}</h1>
       <p class="lead">{summary}</p>
@@ -135,6 +136,14 @@ const breadcrumbLd = {
       <button class="share-btn" type="button" data-share="weibo" title="分享到微博" aria-label="分享到微博">微博</button>
       <button class="share-btn" type="button" data-share="twitter" title="分享到 X" aria-label="分享到 X">X</button>
       <button class="share-btn" type="button" data-share="wechat" title="分享到微信" aria-label="分享到微信">微信</button>
+      <button class="share-btn" type="button" data-share="print" title="打印 / 导出 PDF（已适配打印样式）" aria-label="打印或导出 PDF">🖨️ PDF</button>
+      <a
+        class="share-btn share-link"
+        href={`/notes/${note.id}.md`}
+        download
+        title="下载原文 Markdown"
+        aria-label="下载原文 Markdown"
+      >⤓ MD</a>
     </div>
 
     <nav class="pager">
@@ -645,6 +654,9 @@ const breadcrumbLd = {
           window.open('https://twitter.com/intent/tweet?url=' + enc(url) + '&text=' + enc(title), '_blank', 'noopener');
         } else if (type === 'wechat') {
           openWechat(url);
+        } else if (type === 'print') {
+          // 打印 / 另存为 PDF：global.css 的 @media print 已隐藏背景/导航/侧栏
+          window.print();
         }
       });
     });
@@ -696,6 +708,32 @@ const breadcrumbLd = {
       new MutationObserver(sync).observe(document.documentElement, {
         attributes: true,
         attributeFilter: ['data-focus'],
+      });
+    }
+
+    // 专注阅读正文对齐切换（居左 ↔ 居中，默认居左）
+    const fab = document.getElementById('focus-align-toggle');
+    if (fab) {
+      const setAlign = (v) => {
+        if (window.__setFocusAlign) window.__setFocusAlign(v);
+        else {
+          const a = v === 'center' ? 'center' : 'left';
+          document.documentElement.setAttribute('data-focus-align', a);
+          try { localStorage.setItem('focus_align', a); } catch (e) {}
+        }
+      };
+      const getAlign = () =>
+        document.documentElement.getAttribute('data-focus-align') ||
+        (localStorage.getItem('focus_align') === 'center' ? 'center' : 'left');
+      const syncAlign = () => {
+        const a = getAlign();
+        fab.textContent = a === 'center' ? '正文居中' : '正文居左';
+        fab.classList.toggle('on', a === 'center');
+      };
+      syncAlign();
+      fab.addEventListener('click', () => {
+        setAlign(getAlign() === 'center' ? 'left' : 'center');
+        syncAlign();
       });
     }
   })();
