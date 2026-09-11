@@ -3,6 +3,7 @@ import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toc from '../../components/Toc.astro';
 import { getNotes, formatDate, readingTime } from '../../lib/notes';
+import NoteCard from '../../components/NoteCard.astro';
 import type { GetStaticPaths } from 'astro';
 
 export const getStaticPaths = (async () => {
@@ -21,6 +22,24 @@ const { note, prev, next } = Astro.props;
 const { Content, headings } = await render(note);
 const { title, date, category, tags, summary, cover } = note.data;
 const minutes = readingTime(note.body || '');
+// 相关阅读：按标签重合度(权重2) + 同分类(权重1)打分取前4
+const allNotes = await getNotes();
+const scored = allNotes
+  .filter((n) => n.id !== note.id)
+  .map((n) => {
+    const common = n.data.tags.filter((t) => tags.includes(t)).length;
+    const catScore = n.data.category === category ? 1 : 0;
+    return { n, score: common * 2 + catScore };
+  });
+const related = scored
+  .filter((x) => x.score > 0)
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 4)
+  .map((x) => x.n);
+// 无严格相关时回退到最新几篇，保证区块始终可见
+const fallback = allNotes.filter((n) => n.id !== note.id).slice(0, 4);
+const display = related.length ? related : fallback;
+const relatedTitle = related.length ? '相关阅读' : '延伸阅读';
 const siteName = 'fight-1 的 AI 学习笔记';
 const ogImage = cover ? new URL(cover, Astro.site).href : '/og-default.svg';
 const articleLd = {
@@ -71,7 +90,7 @@ const articleLd = {
     </header>
 
     <div class="detail-body">
-      <div class="content prose">
+      <div class="content prose" data-pagefind-body data-pagefind-meta={`title:${title}`}>
         <Content />
       </div>
       <aside class="side">
@@ -93,6 +112,13 @@ const articleLd = {
       {next ? <a class="pager-link next" href={`/notes/${next.id}`}><span>下一篇 →</span><b>{next.data.title}</b></a> : <span></span>}
     </nav>
 
+    <section class="related" data-reveal>
+      <h2>{relatedTitle}</h2>
+      <div class="grid">
+        {display.map((n) => <NoteCard note={n} />)}
+      </div>
+    </section>
+
     <!-- 星际广播：评论区 -->
     <section class="comm-channel">
       <h2>📻 通讯频道</h2>
@@ -102,6 +128,28 @@ const articleLd = {
         <button type="submit">发送</button>
       </form>
       <div id="comm-list"></div>
+    </section>
+
+    <!-- giscus 评论：需先在 GitHub 仓库开启 Discussions + 安装 giscus app，再到 https://giscus.io 获取 data-repo-id / data-category-id 替换下方占位 -->
+    <section class="giscus" id="giscus-comments">
+      <h2>💬 评论（GitHub）</h2>
+      <p class="muted">使用 GitHub 账号登录即可发表评论，由 giscus 驱动，数据存于 GitHub Discussions。</p>
+      <script is:inline src="https://giscus.app/client.js"
+        data-repo="fight-1/AI-learning"
+        data-repo-id="REPO_ID_HERE"
+        data-category="Announcements"
+        data-category-id="CATEGORY_ID_HERE"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="preferred_color_scheme"
+        data-lang="zh-CN"
+        data-loading="lazy"
+        crossorigin="anonymous"
+        async>
+      </script>
     </section>
   </article>
 </BaseLayout>
@@ -419,6 +467,12 @@ const articleLd = {
       display: none;
     }
   }
+  .related { margin-top: 44px; }
+  .related h2 { font-size: 20px; margin: 0 0 16px; }
+  .related .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .giscus { margin-top: 44px; }
+  .giscus h2 { font-size: 20px; margin: 0 0 8px; }
+  .giscus .muted { margin: 0 0 14px; }
 </style>
 
 <script>

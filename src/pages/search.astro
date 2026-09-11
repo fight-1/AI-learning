@@ -2,9 +2,9 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<BaseLayout title="搜索 · fight-1">
+<BaseLayout title="搜索 · fight-1 的 AI 学习笔记" description="站内全文搜索，基于 Pagefind 中文索引">
   <h1>搜索</h1>
-  <input id="q" class="search-input" type="search" placeholder="输入关键词，按标题 / 摘要 / 标签过滤…" autofocus />
+  <input id="q" class="search-input" type="search" placeholder="输入关键词，全文检索标题 / 正文 / 标签…" autofocus />
   <p id="stat" class="muted"></p>
   <div id="results" class="results"></div>
 </BaseLayout>
@@ -33,49 +33,63 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   }
   .item a { color: var(--text); font-size: 16px; font-weight: 600; }
   .item a:hover { color: var(--accent); text-decoration: none; }
-  .item .s { color: var(--muted); font-size: 13px; margin: 6px 0; }
+  .item .s { color: var(--muted); font-size: 13px; margin: 6px 0; line-height: 1.6; }
   .item .c { font-size: 12px; color: var(--accent-2); }
   mark { background: var(--glow); color: var(--text); border-radius: 3px; padding: 0 2px; }
 </style>
 
-<script>
+<script is:inline type="module">
   const q = document.getElementById('q');
   const results = document.getElementById('results');
   const stat = document.getElementById('stat');
-  let INDEX = [];
+  let pagefind = null;
 
-  async function load() {
-    const res = await fetch('/search.json');
-    INDEX = await res.json();
+  async function init() {
+    try {
+      pagefind = await import(/* @vite-ignore */ '/pagefind/pagefind.js');
+      await pagefind.options({ excerptLength: 30 });
+    } catch (e) {
+      results.innerHTML =
+        '<p class="muted">搜索索引正在生成中（构建后才会生效）。请稍候重新部署后再试，或先用顶部「笔记」页按分类/标签筛选。</p>';
+    }
   }
 
-  function hl(text, term) {
-    if (!term) return text;
-    const i = text.toLowerCase().indexOf(term.toLowerCase());
-    if (i < 0) return text;
-    return text.slice(0, i) + '<mark>' + text.slice(i, i + term.length) + '</mark>' + text.slice(i + term.length);
-  }
-
-  function render(term) {
-    term = term.trim().toLowerCase();
-    const list = term
-      ? INDEX.filter((n) =>
-          (n.title + ' ' + n.summary + ' ' + n.category + ' ' + n.tags.join(' ')).toLowerCase().includes(term)
-        )
-      : INDEX;
-    stat.textContent = term ? `命中 ${list.length} 篇` : `共 ${list.length} 篇`;
+  function render(list, term) {
+    stat.textContent = term ? `命中 ${list.length} 篇` : '输入关键词开始搜索';
     results.innerHTML = list
       .map(
-        (n) => `
+        (d) => `
       <div class="item">
-        <a href="${n.url}">${hl(n.title, term)}</a>
-        <div class="s">${hl(n.summary, term)}</div>
-        <div class="c"># ${n.category} · ${n.date}</div>
+        <a href="${d.url}">${d.meta.title || d.url}</a>
+        <div class="s">${d.excerpt || ''}</div>
       </div>`
       )
       .join('');
   }
 
-  q.addEventListener('input', () => render(q.value));
-  load().then(() => render(''));
+  let timer;
+  async function search(term) {
+    term = term.trim();
+    if (!pagefind) return;
+    if (!term) { render([], ''); return; }
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      try {
+        const res = await pagefind.search(term);
+        const data = await Promise.all(res.results.slice(0, 12).map((r) => r.data()));
+        render(data, term);
+      } catch (e) {
+        stat.textContent = '搜索出错，请重试';
+      }
+    }, 120);
+  }
+
+  q.addEventListener('input', () => search(q.value));
+  init();
+  // 支持 ?q= 直达（如从其它页带关键词跳转）
+  const p = new URLSearchParams(location.search);
+  if (p.get('q')) {
+    q.value = p.get('q');
+    search(q.value);
+  }
 </script>

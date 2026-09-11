@@ -1,0 +1,69 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getNotes, formatDate } from '../lib/notes';
+
+const notes = await getNotes();
+const groups: Record<number, typeof notes> = {};
+for (const n of notes) {
+  const y = n.data.date.getFullYear();
+  (groups[y] = groups[y] || []).push(n);
+}
+const years = Object.keys(groups)
+  .map(Number)
+  .sort((a, b) => b - a);
+---
+
+<BaseLayout title="归档 · fight-1 的 AI 学习笔记" description="全部文章的年度归档，按时间倒序">
+  <h1 class="arch-title">归档</h1>
+  <p class="arch-sub">共 {notes.length} 篇 · 按发布时间倒序排列。</p>
+
+  {years.map((y) => (
+    <section class="year">
+      <h2 class="year-h">{y}</h2>
+      <ul class="year-list">
+        {groups[y].map((n) => (
+          <li>
+            <time class="d">{formatDate(n.data.date)}</time>
+            <a class="t" href={`/notes/${n.id}/`} data-astro-prefetch>{n.data.title}</a>
+            <span class="c"># {n.data.category}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</BaseLayout>
+
+<style>
+  .arch-title { font-size: 28px; margin: 0 0 6px; }
+  .arch-sub { color: var(--muted); margin-top: 0; margin-bottom: 28px; font-size: 14px; }
+  .year { margin-bottom: 30px; }
+  .year-h {
+    font-size: 18px;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin: 0 0 12px;
+    position: sticky;
+    top: 64px;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(6px);
+    z-index: 5;
+  }
+  .year-list { list-style: none; padding: 0; margin: 0; }
+  .year-list li {
+    display: grid;
+    grid-template-columns: 110px 1fr auto;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .year-list .d { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .year-list .t { color: var(--text); font-size: 15px; }
+  .year-list .t:hover { color: var(--accent); text-decoration: none; }
+  .year-list .c { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  @media (max-width: 560px) {
+    .year-list li { grid-template-columns: 84px 1fr; }
+    .year-list .c { grid-column: 2; }
+  }
+</style>
