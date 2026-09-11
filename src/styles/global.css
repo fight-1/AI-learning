@@ -583,6 +583,23 @@ footer {
   border-color: var(--accent);
   color: var(--accent);
 }
+/* 移动端安全区：避开 iPhone 底部横条，防止遮挡固定按钮与正文末尾 */
+@supports (bottom: env(safe-area-inset-bottom)) {
+  #to-top {
+    bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* 阅读设置：正文 字号 / 行距 / 字重（控制台可调，存 localStorage） */
+.content,
+.prose {
+  font-size: var(--read-font-size, 1rem);
+  line-height: var(--read-line-height, 1.8);
+  font-weight: var(--read-weight, 400);
+}
 
 /* 阅读进度条 */
 #read-progress {

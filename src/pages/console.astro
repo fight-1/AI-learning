@@ -139,6 +139,30 @@ const bgModes = {
     </label>
     <p class="sub">系统开启"减少动态效果"时，全站动效会自动降级为静态排版。</p>
   </section>
+
+  <section class="panel">
+    <h2>📖 阅读设置</h2>
+    <p class="sub">调节文章正文的字号、行距与字重，即时生效并记忆到本机（只作用于文章正文）。</p>
+    <label class="read-row">
+      <span class="read-lab">字号</span>
+      <input type="range" id="read-size" min="14" max="22" step="1" value="16" aria-label="正文字号" />
+      <output class="read-val" id="read-size-val">16px</output>
+    </label>
+    <label class="read-row">
+      <span class="read-lab">行距</span>
+      <input type="range" id="read-lh" min="1.4" max="2.4" step="0.1" value="1.8" aria-label="正文行距" />
+      <output class="read-val" id="read-lh-val">1.8</output>
+    </label>
+    <label class="read-row">
+      <span class="read-lab">字重</span>
+      <input type="range" id="read-weight" min="300" max="600" step="100" value="400" aria-label="正文字重" />
+      <output class="read-val" id="read-weight-val">400</output>
+    </label>
+    <div class="cwheel-foot">
+      <button class="creset" id="read-reset" type="button">↺ 恢复默认</button>
+      <span class="chint">改动即时生效，并记忆到本机</span>
+    </div>
+  </section>
 </BaseLayout>
 
 <style>
@@ -176,6 +200,23 @@ const bgModes = {
     font-size: 13px; font-family: inherit; cursor: pointer;
   }
   .setting-row select:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 1px; }
+  /* 阅读设置滑杆 */
+  .read-row {
+    display: grid;
+    grid-template-columns: 48px 1fr 56px;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 0;
+    font-size: 13px;
+  }
+  .read-lab { color: var(--muted); }
+  .read-row input[type='range'] { width: 100%; accent-color: var(--accent-color); cursor: pointer; }
+  .read-val {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text);
+  }
 
   /* 配色工坊 */
   .sub-t { font-size: 12px; color: var(--text); opacity: .8; margin: 16px 0 8px; font-weight: 600; }
@@ -335,5 +376,44 @@ const bgModes = {
         try { localStorage.setItem('focus_align', a); } catch (e) {}
       }
     });
+  }
+
+  // 阅读设置：正文 字号 / 行距 / 字重（写 CSS 变量，即时生效）
+  const rSize = document.getElementById('read-size');
+  const rLh = document.getElementById('read-lh');
+  const rW = document.getElementById('read-weight');
+  if (rSize && rLh && rW) {
+    const DEF = { size: 16, lh: 1.8, weight: 400 };
+    const out = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const applyRead = () => {
+      const size = +rSize.value || DEF.size;
+      const lh = +rLh.value || DEF.lh;
+      const w = +rW.value || DEF.weight;
+      root.style.setProperty('--read-font-size', size + 'px');
+      root.style.setProperty('--read-line-height', String(lh));
+      root.style.setProperty('--read-weight', String(w));
+      out('read-size-val', size + 'px');
+      out('read-lh-val', String(lh));
+      out('read-weight-val', String(w));
+      try {
+        localStorage.setItem('read_size', String(size));
+        localStorage.setItem('read_lh', String(lh));
+        localStorage.setItem('read_weight', String(w));
+      } catch (e) {}
+    };
+    rSize.value = localStorage.getItem('read_size') || DEF.size;
+    rLh.value = localStorage.getItem('read_lh') || DEF.lh;
+    rW.value = localStorage.getItem('read_weight') || DEF.weight;
+    [rSize, rLh, rW].forEach((el) => el.addEventListener('input', applyRead));
+    const rr = document.getElementById('read-reset');
+    if (rr) {
+      rr.addEventListener('click', () => {
+        rSize.value = DEF.size;
+        rLh.value = DEF.lh;
+        rW.value = DEF.weight;
+        applyRead();
+      });
+    }
+    applyRead();
   }
 </script>

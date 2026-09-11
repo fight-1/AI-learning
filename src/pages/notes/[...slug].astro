@@ -211,10 +211,38 @@ const breadcrumbLd = {
         var s = host.querySelector('script[data-giscus]'); if (s) s.remove();
         var f = host.querySelector('iframe.giscus-frame'); if (f) f.remove();
       }
+      // 加载状态反馈：开启后若长时间没出现 iframe，给出可读的排查提示，
+      // 避免「点了开启却毫无反应」的困惑。
+      var hint = host.querySelector('[data-giscus-hint]');
+      var timer = null;
+      function watch() {
+        clearTimeout(timer);
+        var on = (localStorage.getItem('comments') || 'off') === 'on';
+        if (!on) {
+          if (hint) hint.textContent = '评论区已关闭。可在「舰长控制台 → 航行设置」或战甲面板「动态交互 → 评论区」开启。';
+          return;
+        }
+        if (host.querySelector('iframe.giscus-frame')) {
+          if (hint) hint.textContent = '';
+          return;
+        }
+        if (hint) hint.textContent = '正在加载 GitHub 评论…';
+        timer = setTimeout(function () {
+          if (host.querySelector('iframe.giscus-frame')) {
+            if (hint) hint.textContent = '';
+          } else if (hint) {
+            hint.innerHTML =
+              '⚠️ 评论未加载成功。常见原因：① 网络无法访问 <code>giscus.app</code> 或 <code>api.github.com</code>' +
+              '（若开了代理，请把这两个域名都加入直连）；② 仓库未开启 Discussions 或未安装 giscus app。' +
+              '在此之前可先用上方「通讯频道」本地留言。';
+          }
+        }, 8000);
+      }
       function apply() {
         var on = (localStorage.getItem('comments') || 'off') === 'on';
         if (on) load(); else unload();
         document.documentElement.setAttribute('data-comments', on ? 'on' : 'off');
+        watch();
       }
       apply();
       new MutationObserver(apply).observe(document.documentElement, { attributes: true, attributeFilter: ['data-comments'] });

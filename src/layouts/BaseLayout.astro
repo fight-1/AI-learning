@@ -64,6 +64,13 @@ const websiteLd = {
           if ((localStorage.getItem('focus') || 'off') === 'on') root.setAttribute('data-focus', 'on');
           var fa = localStorage.getItem('focus_align');
           root.setAttribute('data-focus-align', fa === 'center' ? 'center' : 'left');
+          // 阅读设置：正文 字号 / 行距 / 字重（控制台可调）
+          var rs = localStorage.getItem('read_size');
+          var rl = localStorage.getItem('read_lh');
+          var rw = localStorage.getItem('read_weight');
+          if (rs) root.style.setProperty('--read-font-size', rs + 'px');
+          if (rl) root.style.setProperty('--read-line-height', rl);
+          if (rw) root.style.setProperty('--read-weight', rw);
           // 首次进入若没有记忆的背景，按皮肤×明暗选最契合的默认（避免 FOUC）
           var bgMap = {
             cosmic:  { dark: 'constellation', light: 'constellation' },
@@ -167,6 +174,42 @@ const websiteLd = {
       window.__getFocusAlign = function () {
         return root.getAttribute('data-focus-align') || (localStorage.getItem('focus_align') === 'center' ? 'center' : 'left');
       };
+      // 悬停预取：内部链接 hover 时插入 <link rel="prefetch">，翻页几乎瞬开。
+      // 刻意不用 Astro 内置 ClientRouter——它会改成客户端路由，
+      // 与 canvas 背景/脚本重新初始化有冲突风险；这里只做纯预取，最稳。
+      (function () {
+        const seen = new Set();
+        const doPrefetch = (href) => {
+          if (!href || seen.has(href)) return;
+          if (!/^\/[^/]/.test(href) && href !== '/') return; // 只预取站内路径
+          seen.add(href);
+          const l = document.createElement('link');
+          l.rel = 'prefetch';
+          l.href = href;
+          l.as = 'document';
+          document.head.appendChild(l);
+        };
+        document.addEventListener(
+          'mouseover',
+          (e) => {
+            const a = e.target.closest && e.target.closest('a[href]');
+            if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+            doPrefetch(a.getAttribute('href'));
+          },
+          { passive: true }
+        );
+        // 触摸设备：touchstart 也触发（移动端同样受益）
+        document.addEventListener(
+          'touchstart',
+          (e) => {
+            const a = e.target.closest && e.target.closest('a[href]');
+            if (!a) return;
+            doPrefetch(a.getAttribute('href'));
+          },
+          { passive: true }
+        );
+      })();
+
       // 搜索快捷键：按 / 聚焦搜索（输入框内不触发）
       document.addEventListener('keydown', (e) => {
         if (e.key === '/' && !/^(input|textarea|select)$/i.test(e.target.tagName) && !e.target.isContentEditable) {
