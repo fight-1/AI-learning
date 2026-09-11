@@ -1,10 +1,12 @@
 ---
 title: 多智能体编排入门：从单 Agent 到团队协作
 date: 2026-09-08
+updated: 2026-09-12
 category: Agent
 tags: [编排, 反思循环, 框架对比]
 summary: 多智能体不是把多个模型堆一起，而是用"角色 + 通信 + 反思"把复杂任务拆给各司其职的 Agent。
 featured: true
+maturity: polished
 ---
 
 # 多智能体编排入门

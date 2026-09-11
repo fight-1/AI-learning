@@ -143,6 +143,24 @@ const bgModes = {
   <section class="panel">
     <h2>📖 阅读设置</h2>
     <p class="sub">调节文章正文的字号、行距与字重，即时生效并记忆到本机（只作用于文章正文）。</p>
+
+    <!-- 实时预览：与文章正文共用同一套 CSS 变量，拖动滑杆即可看到真实效果 -->
+    <div class="read-preview">
+      <div class="rp-bar">
+        <span class="rp-t">实时预览</span>
+        <span class="rp-meta" id="read-preview-meta">16px · 1.8 · 400</span>
+      </div>
+      <div class="rp-body content">
+        <h3>示例：上下文压缩的三个抓手</h3>
+        <p>
+          长对话里最贵的往往不是模型调用，而是<strong>上下文本身</strong>。把历史按
+          「事实 / 决策 / 待办」分层压缩，通常能省下可观的 token，又不丢关键结论。
+        </p>
+        <blockquote>真正省 token 的不是删掉内容，而是让同样的 token 承载更高的信息密度。</blockquote>
+        <p>工程上建议先做 <code>摘要 → 检索</code> 两段式，再考虑引入向量召回。</p>
+      </div>
+    </div>
+
     <label class="read-row">
       <span class="read-lab">字号</span>
       <input type="range" id="read-size" min="14" max="22" step="1" value="16" aria-label="正文字号" />
@@ -216,6 +234,45 @@ const bgModes = {
     font-family: var(--font-mono);
     font-size: 12px;
     color: var(--text);
+  }
+  /* 阅读设置实时预览（与文章正文共用 CSS 变量） */
+  .read-preview {
+    margin: 4px 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+  .rp-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .rp-meta { font-family: var(--font-mono); color: var(--accent-color); }
+  .rp-body {
+    padding: 14px 16px;
+    /* 字号/行距/字重由 .content 上的 CSS 变量控制 */
+  }
+  .rp-body h3 { margin: 0 0 10px; font-size: 1.15em; font-weight: 700; }
+  .rp-body p { margin: 0 0 10px; }
+  .rp-body blockquote {
+    margin: 0 0 10px;
+    padding: 6px 0 6px 12px;
+    border-left: 3px solid var(--accent-color);
+    color: var(--muted);
+    font-style: italic;
+  }
+  .rp-body code {
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: var(--surface);
+    font-family: var(--font-mono);
+    font-size: 0.9em;
   }
 
   /* 配色工坊 */
@@ -395,6 +452,8 @@ const bgModes = {
       out('read-size-val', size + 'px');
       out('read-lh-val', String(lh));
       out('read-weight-val', String(w));
+      const meta = document.getElementById('read-preview-meta');
+      if (meta) meta.textContent = size + 'px · ' + lh + ' · ' + w;
       try {
         localStorage.setItem('read_size', String(size));
         localStorage.setItem('read_lh', String(lh));

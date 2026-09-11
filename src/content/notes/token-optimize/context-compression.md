@@ -5,6 +5,7 @@ category: Token 优化
 tags: [上下文, 成本, 缓存]
 summary: 省钱省延迟的本质是"少往上下文里塞废话"。从检索、摘要、缓存到批处理，逐层瘦身。
 featured: false
+maturity: draft
 ---
 
 # Token 优化：上下文压缩的 5 个抓手

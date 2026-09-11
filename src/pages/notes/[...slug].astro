@@ -24,6 +24,17 @@ const { note, prev, next } = Astro.props;
 const { Content, headings } = await render(note);
 const { title, date, category, tags, summary, cover } = note.data;
 const minutes = readingTime(note.body || '');
+// 最后更新时间（可选）：仅在晚于发布时间时展示
+const updated = note.data.updated;
+const showUpdated = updated && updated.getTime() > date.getTime();
+// 成熟度徽章：让读者一眼判断这篇的完成度
+const maturity = note.data.maturity || 'growing';
+const MATURITY = {
+  draft: { label: '草稿', icon: '🌱' },
+  growing: { label: '成长中', icon: '🌿' },
+  polished: { label: '已打磨', icon: '💎' },
+};
+const mat = MATURITY[maturity] || MATURITY.growing;
 // 相关阅读：按标签重合度(权重2) + 同分类(权重1)打分取前4
 const allNotes = await getNotes();
 const scored = allNotes
@@ -58,7 +69,8 @@ const articleLd = {
   headline: title,
   description: summary,
   datePublished: date.toISOString(),
-  dateModified: date.toISOString(),
+  // 有 updated 就用它，否则退回发布时间（避免结构化数据里的修改时间失真）
+  dateModified: (updated || date).toISOString(),
   author: { '@type': 'Person', name: 'fight-1' },
   keywords: tags.join(', '),
   mainEntityOfPage: { '@type': 'WebPage', '@id': Astro.url.href },
@@ -104,7 +116,9 @@ const breadcrumbLd = {
     <header class="detail-head">
       <div class="meta">
         <a class="chip" href={`/notes?category=${encodeURIComponent(category)}`}># {category}</a>
+        <span class="mat-badge" data-mat={maturity} title={`成熟度：${mat.label}`}>{mat.icon} {mat.label}</span>
         <time>{formatDate(date)}</time>
+        {showUpdated && <span class="upd">· 更新于 {formatDate(updated)}</span>}
         <span>· 约 {minutes} 分钟</span>
         <button class="like-btn" type="button" data-like={note.id} aria-label="注入能量">
           <span class="reactor">⚛</span> 注入能量
@@ -649,6 +663,19 @@ const breadcrumbLd = {
     font-family: inherit;
   }
   .focus-btn:hover, .focus-btn.on { color: var(--accent-color); border-color: var(--accent-color); }
+  /* 成熟度徽章 + 最后更新时间 */
+  .mat-badge {
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .mat-badge[data-mat='polished'] { color: var(--accent-color); border-color: var(--accent-color); }
+  .mat-badge[data-mat='draft'] { opacity: 0.75; font-style: italic; }
+  .upd { color: var(--muted); font-size: 13px; }
 </style>
 
 <script>

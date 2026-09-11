@@ -3,6 +3,13 @@ import { formatDate } from '../lib/notes';
 const { note } = Astro.props;
 const { title, summary, category, tags, date, featured } = note.data;
 const url = `/notes/${note.id}`;
+// 成熟度徽章（卡片用简短标签，与文章页一致）：草稿 / 成长中（默认）/ 已打磨
+const MATURITY = {
+  draft: { label: '草稿', icon: '🌱', cls: 'draft' },
+  growing: { label: '成长中', icon: '🌿', cls: 'growing' },
+  polished: { label: '已打磨', icon: '💎', cls: 'polished' },
+};
+const mat = MATURITY[note.data.maturity || 'growing'];
 ---
 
 <article class="note-card stage-card" data-reveal data-id={note.id} data-category={category} data-tags={tags.join('|')}>
@@ -10,6 +17,7 @@ const url = `/notes/${note.id}`;
     <div class="note-meta">
       <span class="chip">{category}</span>
       <time>{formatDate(date)}</time>
+      <span class="mat-badge" data-mat={mat.cls} title={`成熟度：${mat.label}`}>{mat.icon} {mat.label}</span>
       {featured && <span class="chip feat">精选</span>}
     </div>
     <h3 class="note-title">{title}</h3>
@@ -64,6 +72,21 @@ const url = `/notes/${note.id}`;
     color: var(--accent-2);
     border-color: var(--accent-2);
   }
+  /* 成熟度徽章：与文章页同色系（草稿=斜体淡化，成长中=默认，已打磨=强调色） */
+  .mat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    line-height: 1.6;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .mat-badge[data-mat='polished'] { color: var(--accent-color); border-color: var(--accent-color); }
+  .mat-badge[data-mat='draft'] { opacity: 0.75; font-style: italic; }
   .note-title {
     margin: 0 0 6px;
     font-size: 16px;

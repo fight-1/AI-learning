@@ -5,6 +5,7 @@ category: UI 设计
 tags: [玻璃拟态, 动效, 可访问性]
 summary: 毛玻璃卡片很炫，但对比度、层级、性能任意一项没管好就会翻车。几条实战经验。
 featured: false
+maturity: polished
 ---
 
 # 玻璃拟态 UI：好看但不翻车的 4 条军规
