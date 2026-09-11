@@ -13,12 +13,12 @@ const mat = MATURITY[note.data.maturity || 'growing'];
 ---
 
 <article class="note-card stage-card" data-reveal data-id={note.id} data-category={category} data-tags={tags.join('|')}>
+  {featured && <span class="feat-corner" title="精选">★</span>}
   <a href={url} class="note-link">
     <div class="note-meta">
-      <span class="chip">{category}</span>
+      <span class="chip cat-chip">{category}</span>
       <time>{formatDate(date)}</time>
       <span class="mat-badge" data-mat={mat.cls} title={`成熟度：${mat.label}`}>{mat.icon} {mat.label}</span>
-      {featured && <span class="chip feat">精选</span>}
     </div>
     <h3 class="note-title">{title}</h3>
     <p class="note-sum">{summary}</p>
@@ -52,41 +52,74 @@ const mat = MATURITY[note.data.maturity || 'growing'];
     color: var(--accent);
   }
   .stage-card { overflow: visible; }
+  .note-card { position: relative; }
   .note-link {
     display: block;
-    padding: 16px 18px;
+    padding: 16px 18px 12px;
     color: var(--text);
   }
   .note-link:hover {
     text-decoration: none;
   }
+  /* 顶部信息带：统一尺寸、允许换行、精选移出为角标 */
   .note-meta {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     font-size: 12px;
     color: var(--muted);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    padding-right: 28px; /* 给精选角标留空 */
   }
-  .feat {
-    color: var(--accent-2);
-    border-color: var(--accent-2);
-  }
-  /* 成熟度徽章：与文章页同色系（草稿=斜体淡化，成长中=默认，已打磨=强调色） */
-  .mat-badge {
+  .note-meta .chip,
+  .note-meta .mat-badge,
+  .note-meta time {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    padding: 1px 7px;
+    padding: 2px 8px;
     border-radius: 999px;
     font-size: 11px;
-    line-height: 1.6;
+    line-height: 1.5;
     border: 1px solid var(--border);
-    color: var(--muted);
     white-space: nowrap;
+  }
+  .note-meta time {
+    border-style: dashed;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .cat-chip {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface-2));
+    color: var(--accent-color);
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  }
+  /* 成熟度徽章：与文章页同色系 */
+  .mat-badge {
+    color: var(--muted);
   }
   .mat-badge[data-mat='polished'] { color: var(--accent-color); border-color: var(--accent-color); }
   .mat-badge[data-mat='draft'] { opacity: 0.75; font-style: italic; }
+  /* 精选角标：不占用 meta 行，避免拥挤 */
+  .feat-corner {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--accent-2);
+    color: #fff;
+    font-size: 12px;
+    line-height: 1;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent-2) 45%, transparent);
+    z-index: 2;
+  }
   .note-title {
     margin: 0 0 6px;
     font-size: 16px;
