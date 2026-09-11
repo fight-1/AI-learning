@@ -8,7 +8,8 @@
     "build": "astro build && (pagefind --site dist || true)",
     "preview": "astro preview",
     "astro": "astro",
-    "og": "python scripts/gen-og.py"
+    "og": "python scripts/gen-og.py",
+    "check:links": "node scripts/check-links.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.2.0",

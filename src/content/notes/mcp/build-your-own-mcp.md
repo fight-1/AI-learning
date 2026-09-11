@@ -29,4 +29,4 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 - **职责分离**：Server 只管"能力"，权限与编排交给客户端
 - **复用**：写好一次，所有兼容客户端都能用，不用为每个模型重写适配
 
-和 [多智能体](../agent/multi-agent-orchestration) 搭配，Agent 就能真正"动手"了。
+和 [多智能体](/notes/agent/multi-agent-orchestration/) 搭配，Agent 就能真正"动手"了。

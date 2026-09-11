@@ -36,4 +36,4 @@ def run(goal):
 - 任务长、易出错、需要多次工具调用 → 值得
 - 任务短、确定性高 → 单 Agent + 好 Prompt 更省 token
 
-下一步可看 [MCP](../mcp/build-your-own-mcp) 如何给这些 Agent 接上外部能力。
+下一步可看 [MCP](/notes/mcp/build-your-own-mcp/) 如何给这些 Agent 接上外部能力。
