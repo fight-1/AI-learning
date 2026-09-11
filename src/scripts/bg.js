@@ -8,7 +8,8 @@ import { POEMS } from '../lib/poems.ts';
   let W = 0, H = 0, DPR = 1;
 
   function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, (window.innerWidth <= 768) ? 1.5 : 2);
+    const baseCap = (window.innerWidth <= 768) ? 1.5 : 2;
+    DPR = Math.min(window.devicePixelRatio || 1, baseCap, perf.dprCap);
     W = window.innerWidth;
     H = window.innerHeight;
     canvas.width = Math.floor(W * DPR);
@@ -66,6 +67,59 @@ import { POEMS } from '../lib/poems.ts';
       b.addEventListener('levelchange', chk);
       b.addEventListener('chargingchange', chk);
     }).catch(() => {});
+  }
+
+  /* ---- 实时帧率自适应降级 ----
+   * 按 rAF 采样窗口（约 1s）算平均 FPS：
+   * 连续低帧（< 50）→ 逐级降级：L1 粒子 60% → L2 粒子 40% + DPR 降到 1
+   * → L3 关闭力场/点击叠加层，并避开连线类背景（line / constellation）。
+   * 连续高帧（> 56）足够久 → 逐级恢复（带滞回，避免来回抖动）。
+   * 降级只影响当次会话（不写 localStorage），刷新即恢复用户原本选择。
+   */
+  const perf = {
+    level: 0, frames: 0, acc: 0, lowStreak: 0, okStreak: 0,
+    dprCap: 2, partFactor: 1, overlayOff: false, origMode: null, lastFps: 0,
+  };
+  const PART_FACTOR = [1, 0.6, 0.4, 0.4];
+  const DPR_CAP = [2, 2, 1, 1];
+
+  function applyPerfLevel() {
+    perf.partFactor = PART_FACTOR[perf.level];
+    perf.dprCap = DPR_CAP[perf.level];
+    perf.overlayOff = perf.level >= 3;
+    resize(); // 重算 DPR + 按新系数重建粒子
+    const ro = document.documentElement;
+    if (perf.level >= 3) {
+      // 深度降级：避开连线/星座这类 O(n²) 连线模式，换轻量底图
+      const mode = ro.getAttribute('data-bg') || '';
+      if (mode.includes('line') || mode.includes('constellation')) {
+        if (perf.origMode == null) perf.origMode = mode;
+        const skin = ro.getAttribute('data-skin') || 'cosmic';
+        const light = skin === 'minimal' ? 'dust' : skin === 'cosmic' ? 'star' : skin === 'cyber' ? 'grid' : 'float';
+        ro.setAttribute('data-bg', light); // 触发 MutationObserver → build()
+      }
+    } else if (perf.origMode != null && perf.level < 2) {
+      ro.setAttribute('data-bg', perf.origMode);
+      perf.origMode = null;
+    }
+  }
+
+  function sampleFps(dt) {
+    perf.frames++;
+    perf.acc += dt;
+    if (perf.acc < 1000) return; // 每 ~1s 评估一次
+    const fps = (perf.frames * 1000) / perf.acc;
+    perf.lastFps = Math.round(fps);
+    perf.frames = 0;
+    perf.acc = 0;
+    if (fps < 50) { perf.lowStreak++; perf.okStreak = 0; }
+    else if (fps > 56) { perf.okStreak++; perf.lowStreak = 0; }
+    else { perf.lowStreak = 0; perf.okStreak = 0; }
+    if (perf.lowStreak >= 2 && perf.level < 3) {
+      perf.level++; perf.lowStreak = 0; applyPerfLevel();
+    } else if (perf.okStreak >= 6 && perf.level > 0) {
+      perf.level--; perf.okStreak = 0; applyPerfLevel();
+    }
   }
 
   function rgba(hex, al) {
@@ -1024,7 +1078,8 @@ import { POEMS } from '../lib/poems.ts';
     parts: [],
     bursts: [],
     init() {
-      const N = Math.max(18, Math.min(50, Math.round((W * H) / 26000)));
+      const base = Math.max(18, Math.min(50, Math.round((W * H) / 26000)));
+      const N = Math.max(6, Math.round(base * (perf.partFactor || 1)));
       this.parts = [];
       for (let i = 0; i < N; i++)
         this.parts.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.08, vy: (Math.random() - 0.5) * 0.08 });
@@ -1112,6 +1167,12 @@ import { POEMS } from '../lib/poems.ts';
         click: settings.click,
         pointer: { x: pointer.x, y: pointer.y, active: pointer.active },
         reduce: reduce,
+        // 帧率自适应降级状态（调试用）
+        perfLevel: perf.level,
+        fps: perf.lastFps,
+        partFactor: perf.partFactor,
+        dprCap: perf.dprCap,
+        overlayOff: perf.overlayOff,
       };
     },
   };
@@ -1171,9 +1232,11 @@ import { POEMS } from '../lib/poems.ts';
   function loop(t) {
     const dt = Math.min(50, t - last || 16);
     last = t;
+    sampleFps(dt);
     current.frame(t, dt);
-    if (settings.force !== 'off') fx.forceFrame(t, dt);
-    if (settings.click !== 'off') fx.burstFrame(t, dt);
+    // 深度降级（L3）时关闭叠加层：力场粒子与点击爆发
+    if (settings.force !== 'off' && !perf.overlayOff) fx.forceFrame(t, dt);
+    if (settings.click !== 'off' && !perf.overlayOff) fx.burstFrame(t, dt);
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);

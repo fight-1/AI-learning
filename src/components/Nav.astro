@@ -21,7 +21,11 @@ const path = Astro.url.pathname;
 
     <nav class="nav-links">
       {links.map((l) => (
-        <a href={l.href} class:list={['nav-link', { active: path === l.href || (l.href !== '/' && path.startsWith(l.href)) }]}>
+        <a
+          href={l.href}
+          class:list={['nav-link', { active: path === l.href || (l.href !== '/' && path.startsWith(l.href)) }]}
+          aria-current={path === l.href ? 'page' : undefined}
+        >
           {l.label}
         </a>
       ))}

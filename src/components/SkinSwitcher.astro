@@ -101,6 +101,11 @@ const defaultBg = { cosmic: 'constellation', cyber: 'matrix', xianxia: 'rune', i
       <code class="pal-hex" data-pal-hex="accent2">#8B5CF6</code>
     </label>
     <button class="pal-reset" data-pal-reset type="button">↺ 跟随皮肤原色</button>
+    <div class="pal-tools">
+      <button class="pal-tool" data-pal-random type="button" title="随机生成一组协调配色" aria-label="随机配色">🎲 随机</button>
+      <button class="pal-tool" data-pal-export type="button" title="导出当前配色为 JSON 文件" aria-label="导出配色">⤓ 导出</button>
+      <button class="pal-tool" data-pal-import type="button" title="导入配色 JSON 文件" aria-label="导入配色">⤒ 导入</button>
+    </div>
   </div>
 </div>
 
@@ -284,6 +289,17 @@ const defaultBg = { cosmic: 'constellation', cyber: 'matrix', xianxia: 'rune', i
   }
   .pal-reset:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
   .pal-reset:disabled { opacity: .4; cursor: default; }
+  .pal-tools {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+  }
+  .pal-tool {
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--text);
+    font-size: 12px; font-family: inherit; padding: 5px 4px; cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .pal-tool:hover { border-color: var(--accent); color: var(--accent); }
+  .pal-tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 </style>
 
 <script>

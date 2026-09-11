@@ -208,6 +208,66 @@ export function resetToSkin() {
   syncUI();
 }
 
+/* ---------- 随机 / 导出 / 导入 ---------- */
+/* 随机协调配色：随机色相 + 协调饱和度，副色 +30°，辉光取主色，
+ * 亮度随明暗自适应，保证任意皮肤/明暗下都协调可读。 */
+export function randomPalette() {
+  const h = Math.floor(Math.random() * 360);
+  const s = 0.55 + Math.random() * 0.3; // 0.55~0.85
+  const theme = currentTheme();
+  const l = theme === 'light' ? 0.42 : 0.64;
+  const c = {
+    accent: hslToHex(h, s, l),
+    accent2: hslToHex(h + 30, clamp(s * 0.95, 0.2, 0.9), theme === 'light' ? 0.46 : 0.72),
+    glow: `hsla(${h}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%, 0.22)`,
+  };
+  write(c);
+  try {
+    localStorage.setItem(LS_CUSTOM, JSON.stringify(c));
+    localStorage.setItem(LS_PRESET, 'custom');
+  } catch (e) {}
+  syncUI();
+  return c;
+}
+
+/* 导出当前配色为 JSON 字符串（含预设来源，便于分享/备份） */
+export function exportPalette() {
+  const preset = (() => {
+    try {
+      return localStorage.getItem(LS_PRESET);
+    } catch (e) {
+      return 'default';
+    }
+  })();
+  const c = currentColors();
+  return JSON.stringify({ preset, custom: c }, null, 2);
+}
+
+/* 导入配色 JSON：接受 {custom:{accent,accent2,glow}} 或裸 {accent,accent2,glow}。
+ * 返回是否成功。 */
+export function importPalette(text) {
+  let o;
+  try {
+    o = JSON.parse(text);
+  } catch (e) {
+    return false;
+  }
+  const c = o && o.custom ? o.custom : o;
+  if (!c || !c.accent) return false;
+  const col = {
+    accent: c.accent,
+    accent2: c.accent2 || deriveAccent2(c.accent, currentTheme()),
+    glow: c.glow || glowOf(c.accent),
+  };
+  write(col);
+  try {
+    localStorage.setItem(LS_CUSTOM, JSON.stringify(col));
+    localStorage.setItem(LS_PRESET, 'custom');
+  } catch (e) {}
+  syncUI();
+  return true;
+}
+
 /* ---------- UI 同步（两处面板共用同一套 data 属性） ---------- */
 export function syncUI() {
   const preset = (() => {
@@ -320,6 +380,51 @@ export function initPalette() {
     if (!b) return;
     e.stopPropagation();
     resetToSkin();
+  });
+
+  // 随机配色
+  document.addEventListener('click', (e) => {
+    if (!(e.target.closest && e.target.closest('[data-pal-random]'))) return;
+    e.stopPropagation();
+    randomPalette();
+  });
+
+  // 导出配色（下载 JSON）
+  document.addEventListener('click', (e) => {
+    if (!(e.target.closest && e.target.closest('[data-pal-export]'))) return;
+    e.stopPropagation();
+    const blob = new Blob([exportPalette()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'palette.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  // 导入配色（选 JSON 文件）
+  document.addEventListener('click', (e) => {
+    if (!(e.target.closest && e.target.closest('[data-pal-import]'))) return;
+    e.stopPropagation();
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'application/json,.json';
+    inp.style.display = 'none';
+    inp.onchange = () => {
+      const f = inp.files && inp.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        importPalette(String(r.result));
+      };
+      r.readAsText(f);
+      inp.remove();
+    };
+    document.body.appendChild(inp);
+    inp.click();
+    inp.remove();
   });
 
   // 明暗切换后，预设亮度需重新自适应

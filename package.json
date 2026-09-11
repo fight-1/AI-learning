@@ -7,7 +7,8 @@
     "dev": "astro dev",
     "build": "astro build && (pagefind --site dist || true)",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "og": "python scripts/gen-og.py"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.2.0",

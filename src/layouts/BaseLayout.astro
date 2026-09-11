@@ -31,6 +31,8 @@ const websiteLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#5eead4" />
     <link rel="preconnect" href="https://static.cloudflareinsights.com" crossorigin />
     <link rel="preconnect" href="https://giscus.app" crossorigin />
     <title>{title}</title>
@@ -81,10 +83,11 @@ const websiteLd = {
     </script>
   </head>
   <body>
+    <a class="skip-link" href="#main">跳到主内容</a>
     <canvas id="bg"></canvas>
     <div id="read-progress" aria-hidden="true"><div></div></div>
     <Nav />
-    <main class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+    <main id="main" class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <slot />
     </main>
     <footer class="mx-auto w-full max-w-6xl px-4 pb-10 pt-6 text-center text-sm text-muted sm:px-6">
@@ -192,5 +195,14 @@ const websiteLd = {
     <!-- Cloudflare Web Analytics -->
     <script is:inline type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "c90144522a1a46aa9b7046a1178bd5f0"}'></script>
     <!-- End Cloudflare Web Analytics -->
+
+    <!-- PWA：注册 Service Worker（离线可读 / 回访秒开） -->
+    <script is:inline>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function () {});
+        });
+      }
+    </script>
   </body>
 </html>

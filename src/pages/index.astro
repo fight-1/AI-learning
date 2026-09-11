@@ -38,6 +38,14 @@ const stats = { notes: notes.length, tags: tags.length, cats: cats.length };
     </div>
   </section>
 
+  <section class="block" data-reveal id="popular-block" hidden>
+    <div class="block-head">
+      <h2>热门文章</h2>
+      <span class="more">按浏览量 · 近实时</span>
+    </div>
+    <ol class="popular" id="popular-list"></ol>
+  </section>
+
   <section class="block" data-reveal>
     <div class="block-head"><h2>按分类游览</h2></div>
     <div class="chips">
@@ -64,6 +72,39 @@ const stats = { notes: notes.length, tags: tags.length, cats: cats.length };
       setTimeout(tick, del ? 45 : 110);
     }
     tick();
+  })();
+
+  // 热门文章：把 KV 里按路径累计的 PV 与构建期的文章索引 join。
+  // 未绑 KV / 本地预览（无 Pages Function）/ 暂无数据时整块保持隐藏，不占版面。
+  (function () {
+    const block = document.getElementById('popular-block');
+    const list = document.getElementById('popular-list');
+    if (!block || !list) return;
+    const esc = (s) =>
+      String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    Promise.all([
+      fetch('/api/visitors?top=5').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/articles.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([stats, articles]) => {
+      const top = (stats && stats.top) || [];
+      if (!top.length || !articles || !articles.length) return;
+      const norm = (p) => String(p || '').replace(/\/+$/, '');
+      const byPath = new Map(articles.map((a) => [norm(a.path), a]));
+      const items = top
+        .map((t) => ({ pv: t.pv, meta: byPath.get(norm(t.path)) }))
+        .filter((t) => t.meta);
+      if (!items.length) return;
+      list.innerHTML = items
+        .map(
+          (t, i) =>
+            '<li><a href="' + esc(t.meta.path) + '/">' +
+            '<span class="pk">' + (i + 1) + '</span>' +
+            '<span class="pt">' + esc(t.meta.title) + '</span>' +
+            '<span class="pv">' + esc(t.pv) + ' 次浏览</span></a></li>'
+        )
+        .join('');
+      block.hidden = false;
+    });
   })();
 </script>
 
@@ -209,5 +250,53 @@ const stats = { notes: notes.length, tags: tags.length, cats: cats.length };
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+  /* 热门文章榜 */
+  .popular {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .popular li a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .popular li a:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+  .popular .pk {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #04121a;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .popular .pt {
+    flex: 1;
+    font-size: 14px;
+  }
+  .popular .pv {
+    flex: none;
+    font-size: 12px;
+    color: var(--muted);
   }
 </style>

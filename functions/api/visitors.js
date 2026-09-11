@@ -14,11 +14,25 @@ function json(data, extra) {
 }
 
 async function readStats(env) {
-  if (!env || !env.VISITOR_KV) return { pv: 0, uv: 0, noKV: true };
+  if (!env || !env.VISITOR_KV) return { pv: 0, uv: 0, pages: {}, noKV: true };
   try {
-    return (await env.VISITOR_KV.get('stats', { type: 'json' })) || { pv: 0, uv: 0 };
+    const s = (await env.VISITOR_KV.get('stats', { type: 'json' })) || { pv: 0, uv: 0, pages: {} };
+    if (!s.pages || typeof s.pages !== 'object') s.pages = {};
+    return s;
   } catch {
-    return { pv: 0, uv: 0 };
+    return { pv: 0, uv: 0, pages: {} };
+  }
+}
+
+// 归一化路径：去 query/hash、去结尾斜杠、限制长度
+function normalizePath(p) {
+  try {
+    const u = new URL(String(p || '/'), 'https://x.invalid');
+    let path = u.pathname.replace(/\/+$/, '') || '/';
+    if (!path.startsWith('/')) path = '/' + path;
+    return path.slice(0, 200);
+  } catch (e) {
+    return '/';
   }
 }
 
@@ -27,8 +41,19 @@ function beijingDate() {
   return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
-export async function onRequestGet({ env }) {
-  return json(await readStats(env));
+export async function onRequestGet({ request, env }) {
+  const stats = await readStats(env);
+  // ?top=N -> 返回 PV 最高的 N 个页面路径（供「热门文章」使用）
+  const url = new URL(request.url);
+  const topN = parseInt(url.searchParams.get('top') || '', 10);
+  if (topN > 0) {
+    const top = Object.entries(stats.pages || {})
+      .map(([path, pv]) => ({ path, pv }))
+      .sort((a, b) => b.pv - a.pv)
+      .slice(0, Math.min(topN, 20));
+    return json({ pv: stats.pv || 0, uv: stats.uv || 0, top, noKV: !!stats.noKV });
+  }
+  return json(stats);
 }
 
 export async function onRequestPost({ request, env }) {
@@ -45,6 +70,29 @@ export async function onRequestPost({ request, env }) {
 
   const stats = await readStats(env);
   if (stats.noKV) return json(stats);
+
+  // 按路径累计 PV（用于「热门文章」）：优先取前端上报的 path，回退 Referer
+  let rawPath = '';
+  try {
+    const body = await request.json();
+    rawPath = (body && body.path) || '';
+  } catch (e) {}
+  if (!rawPath) {
+    const ref = request.headers.get('Referer') || '';
+    if (ref) rawPath = normalizePath(ref);
+  }
+  const path = normalizePath(rawPath || '/');
+  stats.pages[path] = (stats.pages[path] || 0) + 1;
+  // 控制体积：路径数过多时只保留 PV 最高的若干条
+  const keys = Object.keys(stats.pages);
+  if (keys.length > 300) {
+    stats.pages = Object.fromEntries(
+      keys
+        .map((k) => [k, stats.pages[k]])
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 150)
+    );
+  }
 
   stats.pv = (stats.pv || 0) + 1;
   if (isNewDay) stats.uv = (stats.uv || 0) + 1;

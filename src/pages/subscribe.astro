@@ -42,6 +42,32 @@ const fmt = (d) => new Date(d).toLocaleDateString('zh-CN', { year: 'numeric', mo
     </ul>
   </section>
 
+  <section class="block mail-card" data-reveal>
+    <div class="block-head"><h2>邮件订阅</h2></div>
+    <p class="sub">
+      想让新文章直接进邮箱？<strong class="warn">目前是虚拟邮箱占位</strong>：本站是纯静态站点，
+      尚未接入真实邮件服务，提交只会唤起你的邮件客户端。接入 Buttondown / Mailchimp / Formspree 后，
+      把脚本里的 <code>SUBSCRIBE_ENDPOINT</code> 换成真实地址即可真正生效。
+    </p>
+    <form class="mail-form" id="mail-form" novalidate>
+      <input
+        type="email"
+        id="mail-input"
+        name="email"
+        required
+        placeholder="you@example.com"
+        aria-label="邮箱地址"
+        autocomplete="email"
+      />
+      <button type="submit" class="btn btn-primary">订阅</button>
+    </form>
+    <p class="mail-note">
+      虚拟邮箱：<code id="virtual-mail">subscribe@fight-1.example.com</code>
+      <button class="sub-copy" id="mail-copy-btn" type="button">复制</button>
+    </p>
+    <p class="mail-msg" id="mail-msg" role="status" aria-live="polite"></p>
+  </section>
+
   <section class="block" data-reveal>
     <div class="block-head"><h2>最近更新</h2></div>
     <ul class="recent">
@@ -169,6 +195,62 @@ const fmt = (d) => new Date(d).toLocaleDateString('zh-CN', { year: 'numeric', mo
     color: var(--muted);
     white-space: nowrap;
   }
+  /* 邮件订阅（虚拟邮箱占位） */
+  .mail-card .warn { color: var(--accent); }
+  .mail-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .mail-form input {
+    flex: 1 1 220px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .mail-form input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #04121a;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .mail-note {
+    margin: 10px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .mail-msg {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: var(--accent);
+    min-height: 16px;
+  }
 </style>
 
 <script>
@@ -186,6 +268,56 @@ const fmt = (d) => new Date(d).toLocaleDateString('zh-CN', { year: 'numeric', mo
       } catch {
         btn.textContent = '复制失败';
         setTimeout(() => (btn.textContent = '复制地址'), 1800);
+      }
+    });
+  }
+
+  /* 邮件订阅：纯静态站点暂无后端，先用虚拟邮箱占位。
+     接入 Buttondown / Mailchimp / Formspree 后，把 SUBSCRIBE_ENDPOINT 换成其表单地址即可真正生效。 */
+  const SUBSCRIBE_ENDPOINT = '';
+  const VIRTUAL_MAIL = 'subscribe@fight-1.example.com';
+  const mailForm = document.getElementById('mail-form');
+  const mailInput = document.getElementById('mail-input');
+  const mailMsg = document.getElementById('mail-msg');
+  if (mailForm && mailInput && mailMsg) {
+    mailForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = (mailInput.value || '').trim();
+      if (!email) {
+        mailMsg.textContent = '请先填写邮箱地址。';
+        return;
+      }
+      if (SUBSCRIBE_ENDPOINT) {
+        try {
+          const res = await fetch(SUBSCRIBE_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          mailMsg.textContent = res.ok ? '订阅成功，请到邮箱确认。' : '订阅失败，请稍后再试。';
+        } catch {
+          mailMsg.textContent = '订阅失败，请稍后再试。';
+        }
+        return;
+      }
+      // 未接入真实服务：提示 + 唤起邮件客户端（收件人为虚拟邮箱，仅占位）
+      mailMsg.textContent = '尚未接入真实邮件服务，已尝试唤起你的邮件客户端（收件人为虚拟邮箱，仅作占位）。';
+      const subject = encodeURIComponent('订阅 fight-1 的 AI 学习笔记');
+      const body = encodeURIComponent('我的邮箱：' + email);
+      window.location.href = `mailto:${VIRTUAL_MAIL}?subject=${subject}&body=${body}`;
+    });
+  }
+  const mailCopy = document.getElementById('mail-copy-btn');
+  const vmail = document.getElementById('virtual-mail');
+  if (mailCopy && vmail) {
+    mailCopy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(vmail.textContent.trim());
+        mailCopy.textContent = '已复制 ✓';
+        setTimeout(() => (mailCopy.textContent = '复制'), 1800);
+      } catch {
+        mailCopy.textContent = '复制失败';
+        setTimeout(() => (mailCopy.textContent = '复制'), 1800);
       }
     });
   }

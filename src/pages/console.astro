@@ -86,6 +86,11 @@ const bgModes = {
         <button class="creset" data-pal-reset type="button">↺ 跟随皮肤原色</button>
         <span class="chint">改动即时生效，并记忆到本机</span>
       </div>
+      <div class="ctools">
+        <button class="ctool" data-pal-random type="button">🎲 随机配色</button>
+        <button class="ctool" data-pal-export type="button">⤓ 导出</button>
+        <button class="ctool" data-pal-import type="button">⤒ 导入</button>
+      </div>
     </div>
   </section>
 
@@ -202,6 +207,15 @@ const bgModes = {
   .creset:hover:not(:disabled) { border-color: var(--accent-color); color: var(--accent-color); }
   .creset:disabled { opacity: .4; cursor: default; }
   .chint { font-size: 11px; color: var(--muted); }
+  .ctools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .ctool {
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--text);
+    font-size: 12px; font-family: inherit; padding: 6px 10px; cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .ctool:hover { border-color: var(--accent-color); color: var(--accent-color); }
+  .ctool:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 1px; }
   @media (max-width: 560px) {
     .crow { grid-template-columns: 36px 1fr 40px; }
     .crow .cdesc { display: none; }

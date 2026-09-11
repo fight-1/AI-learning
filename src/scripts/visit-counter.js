@@ -16,7 +16,9 @@ function initVisitorCounter() {
   const send = () => {
     fetch('/api/visitors', {
       method: 'POST',
-      headers: { Accept: 'application/json' },
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      // 上报当前页面路径，供「热门文章」按文章累计 PV
+      body: JSON.stringify({ path: location.pathname }),
       keepalive: true,
     })
       .then((r) => (r.ok ? r.json() : null))

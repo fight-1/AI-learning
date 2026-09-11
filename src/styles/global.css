@@ -606,6 +606,44 @@ footer {
 /* 代码复制按钮 */
 .astro-code {
   position: relative;
+  /* 给块头留出空间（!important 用于覆盖 shiki 内联 padding） */
+  padding-top: 34px !important;
+}
+/* 代码块头部：语言标签 + 文件名标题 + 复制按钮 */
+.code-head {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.22);
+  z-index: 1;
+}
+.code-lang {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  flex: none;
+}
+.code-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 块头内的复制按钮改为常规流布局，靠右对齐 */
+.code-head .copy-btn {
+  position: static;
+  margin-left: auto;
+  flex: none;
+  opacity: 0.7;
 }
 .copy-btn {
   position: absolute;
@@ -1156,4 +1194,91 @@ html[data-focus='on'] .side { display: none; }
 html[data-focus='on'] .content { max-width: 720px; margin: 0 auto; }
 html[data-focus='on'] .comm-channel,
 html[data-focus='on'] .giscus { opacity: 0.6; }
+
+/* ============================================================
+   无障碍：跳到主内容 + 统一键盘焦点轮廓
+   ============================================================ */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: 8px 14px;
+  border-radius: 0 0 8px 0;
+  background: var(--accent);
+  color: #06121b;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  left: 8px;
+  top: 8px;
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   打印 / 导出 PDF：隐藏背景动效·导航·侧栏，正文宽屏黑字
+   ============================================================ */
+@media print {
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  /* 隐藏一切非正文元素（注意：只隐藏 .nav，不要隐藏 header，
+     否则文章标题所在的 header 也会被一起隐藏） */
+  #bg,
+  #read-progress,
+  #to-top,
+  #progress,
+  .nav,
+  .side,
+  .toc,
+  .skin-panel,
+  .share-bar,
+  .pager,
+  .related,
+  .comm-channel,
+  .giscus,
+  .qr-overlay,
+  .copy-btn,
+  footer {
+    display: none !important;
+  }
+  main, .content, .detail-body, .detail-main {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  a { color: #000 !important; text-decoration: underline; }
+  a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 10px;
+    color: #555;
+    word-break: break-all;
+  }
+  pre, .astro-code {
+    background: #f6f8fa !important;
+    color: #000 !important;
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+  }
+  pre code, .astro-code code { color: #000 !important; }
+  .code-head {
+    background: #eaeef2 !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+  /* 避免代码/表格/图片跨页断裂 */
+  pre, .astro-code, figure, table, img { break-inside: avoid; page-break-inside: avoid; }
+  h1, h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
+}
 

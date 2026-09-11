@@ -5,6 +5,8 @@ import Toc from '../../components/Toc.astro';
 import { getNotes, formatDate, readingTime } from '../../lib/notes';
 import NoteCard from '../../components/NoteCard.astro';
 import type { GetStaticPaths } from 'astro';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export const getStaticPaths = (async () => {
   const notes = await getNotes();
@@ -41,7 +43,15 @@ const fallback = allNotes.filter((n) => n.id !== note.id).slice(0, 4);
 const display = related.length ? related : fallback;
 const relatedTitle = related.length ? '相关阅读' : '延伸阅读';
 const siteName = 'fight-1 的 AI 学习笔记';
-const ogImage = cover ? new URL(cover, Astro.site).href : '/og-default.svg';
+// OG 分享图优先级：本文章的动态生成图（public/og/<slug>.png，scripts/gen-og.py 产出）
+// > 文章 cover > 全站默认图。构建期检查文件是否存在，缺失自动回退。
+const ogFile = note.id.replace(/\//g, '-') + '.png';
+const hasOgPng = fs.existsSync(path.join(process.cwd(), 'public', 'og', ogFile));
+const ogImage = hasOgPng
+  ? '/og/' + ogFile
+  : cover
+    ? new URL(cover, Astro.site).href
+    : '/og-default.svg';
 const articleLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
@@ -54,6 +64,25 @@ const articleLd = {
   mainEntityOfPage: { '@type': 'WebPage', '@id': Astro.url.href },
   publisher: { '@type': 'Organization', name: siteName },
   image: new URL(ogImage, Astro.site).href,
+};
+// 面包屑结构化数据：首页 › 笔记 › 分类 › 本文
+const base = (Astro.site && Astro.site.href.replace(/\/$/, '')) || '';
+const breadcrumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: '首页', item: base + '/' },
+    { '@type': 'ListItem', position: 2, name: '笔记', item: base + '/notes' },
+    ...(category
+      ? [{ '@type': 'ListItem', position: 3, name: category, item: base + '/notes?category=' + encodeURIComponent(category) }]
+      : []),
+    {
+      '@type': 'ListItem',
+      position: category ? 4 : 3,
+      name: title,
+      item: Astro.url.href,
+    },
+  ],
 };
 ---
 
@@ -178,6 +207,7 @@ const articleLd = {
 </BaseLayout>
 
 <script type="application/ld+json" set:html={JSON.stringify(articleLd)} />
+<script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
 
 <script>
   // 通讯频道：本地持久化 + 嵌套回复（树形）
