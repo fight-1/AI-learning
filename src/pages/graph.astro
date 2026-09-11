@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="知识图谱 · fight-1" description="标签关系力导向图，节点大小代表出现频次，连线代表同篇共现">
+  <h1>知识图谱</h1>
+  <p class="muted">标签关系力导向图：节点越大代表出现越多，连线越粗代表越常同篇出现。悬浮高亮邻居，点击跳转对应标签页。</p>
+
+  <div class="graph-bar">
+    <span id="graph-info" class="gi">加载中…</span>
+    <button id="graph-reset" type="button" class="greset">重置高亮</button>
+  </div>
+  <div id="graph" class="graph-wrap">
+    <svg viewBox="0 0 800 496" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+</BaseLayout>
+
+<style>
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .muted { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .graph-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .gi { font-size: 13px; color: var(--accent-2); }
+  .greset {
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .greset:hover { color: var(--accent-color); border-color: var(--accent-color); }
+  .graph-wrap {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--surface) 80%, var(--bg));
+    overflow: hidden;
+  }
+  .graph-wrap svg { display: block; width: 100%; height: auto; }
+</style>
+
+<script>
+  import { initGraph } from '../scripts/graph.js';
+  initGraph();
+</script>

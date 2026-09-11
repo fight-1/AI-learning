@@ -738,6 +738,26 @@ footer {
   color: var(--accent);
   border-color: var(--accent);
 }
+/* StackBlitz 打开按钮：与复制按钮同处块头右侧区 */
+.code-head .sb-btn {
+  position: static;
+  flex: none;
+  margin-left: 6px;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  opacity: 0.7;
+}
+.code-head .sb-btn:hover {
+  opacity: 1;
+  color: var(--accent-2);
+  border-color: var(--accent-2);
+}
 
 /* 收藏按钮 */
 .fav-btn {

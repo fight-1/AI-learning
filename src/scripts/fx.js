@@ -116,6 +116,48 @@ document.querySelectorAll('pre.astro-code').forEach((pre) => {
   });
   head.appendChild(btn);
 
+  // StackBlitz 打开按钮：仅对可运行/可预览的语言显示
+  const RUNNABLE = new Set(['js', 'javascript', 'ts', 'typescript', 'jsx', 'tsx', 'mjs', 'cjs', 'html', 'css', 'json', 'astro', 'vue', 'svelte']);
+  if (RUNNABLE.has(key)) {
+    const sb = document.createElement('button');
+    sb.className = 'sb-btn';
+    sb.type = 'button';
+    sb.textContent = '⚡ StackBlitz';
+    sb.setAttribute('aria-label', '在 StackBlitz 中打开');
+    sb.addEventListener('click', (e) => {
+      e.preventDefault();
+      const codeEl = pre.querySelector('code');
+      const code = (codeEl || pre).textContent;
+      const ext = lang && lang !== 'true' ? lang : 'js';
+      const fname = title || `index.${ext}`;
+      const template = key === 'html' ? 'html' : 'node';
+      const files = { [fname]: code };
+      if (template === 'node') {
+        files['package.json'] = JSON.stringify({ name: (title || 'snippet').replace(/[^\w.-]/g, '-'), private: true, type: 'module' }, null, 2);
+      }
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = 'https://stackblitz.com/run';
+      form.target = '_blank';
+      form.style.display = 'none';
+      const add = (k, v) => {
+        const i = document.createElement('input');
+        i.type = 'hidden';
+        i.name = k;
+        i.value = v;
+        form.appendChild(i);
+      };
+      add('project[title]', title || '代码片段');
+      add('project[description]', '来自 fight-1 的 AI 学习笔记');
+      add('project[template]', template);
+      Object.entries(files).forEach(([p, c]) => add(`project[files][${p}]`, c));
+      document.body.appendChild(form);
+      form.submit();
+      form.remove();
+    });
+    head.appendChild(sb);
+  }
+
   pre.insertBefore(head, pre.firstChild);
 });
 

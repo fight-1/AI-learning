@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 类型与语法校验 (astro check)
+        run: npm run astro:check
+
+      - name: 构建 (含 Pagefind 索引)
+        run: npm run build
+
+      - name: 站内死链检查
+        run: npm run check:links
+
+      - name: 构建体积预算
+        run: node scripts/size-budget.mjs --max=8M
