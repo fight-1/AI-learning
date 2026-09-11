@@ -33,6 +33,15 @@ const url = `/notes/${note.id}`;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     transform-style: preserve-3d;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  .note-card:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+    box-shadow: 0 14px 30px -16px var(--glow), 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  .note-card:hover .note-title {
+    color: var(--accent);
   }
   .stage-card { overflow: visible; }
   .note-link {

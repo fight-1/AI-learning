@@ -81,6 +81,7 @@ const articleLd = {
           <span class="reactor">⚛</span> 注入能量
         </button>
         <button class="fav-btn fav-inline" type="button" data-fav={note.id}>☆ 收藏</button>
+        <button class="focus-btn fav-inline" type="button" id="focus-toggle">专注阅读</button>
       </div>
       <h1>{title}</h1>
       <p class="lead">{summary}</p>
@@ -495,6 +496,31 @@ const articleLd = {
   .giscus { margin-top: 44px; }
   .giscus h2 { font-size: 20px; margin: 0 0 8px; }
   .giscus .muted { margin: 0 0 14px; }
+  .has-anchor { position: relative; }
+  .anchor-link {
+    position: absolute;
+    left: -1.1em;
+    top: 0.18em;
+    font-size: 0.72em;
+    color: var(--accent);
+    opacity: 0;
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+  .has-anchor:hover .anchor-link { opacity: 0.75; }
+  .anchor-link:hover { opacity: 1; }
+  .focus-btn {
+    margin-left: auto;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .focus-btn:hover, .focus-btn.on { color: var(--accent-color); border-color: var(--accent-color); }
 </style>
 
 <script>
@@ -592,5 +618,55 @@ const articleLd = {
         }
       });
     });
+  })();
+</script>
+
+<script>
+  // 锚点一键复制：给正文 h2/h3 生成 id + 悬浮 # 按钮
+  (function () {
+    const content = document.querySelector('.content');
+    if (!content) return;
+    const heads = content.querySelectorAll('h2, h3');
+    let n = 0;
+    const slugify = (t) =>
+      t.trim().toLowerCase().replace(/[^\w一-龥]+/g, '-').replace(/^-+|-+$/g, '') || 'h';
+    heads.forEach((h) => {
+      if (!h.id) h.id = slugify(h.textContent) + '-' + ++n;
+      h.classList.add('has-anchor');
+      const a = document.createElement('a');
+      a.className = 'anchor-link';
+      a.href = '#' + h.id;
+      a.textContent = '#';
+      a.setAttribute('aria-label', '复制锚点链接');
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const link = location.origin + location.pathname + '#' + h.id;
+        if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => {
+          a.textContent = '✓';
+          setTimeout(() => (a.textContent = '#'), 1200);
+        }).catch(() => {});
+        history.replaceState(null, '', '#' + h.id);
+      });
+      h.appendChild(a);
+    });
+
+    // 专注阅读模式按钮（文章页）
+    const fb = document.getElementById('focus-toggle');
+    if (fb) {
+      const sync = () => {
+        const on = document.documentElement.getAttribute('data-focus') === 'on';
+        fb.classList.toggle('on', on);
+        fb.textContent = on ? '退出专注' : '专注阅读';
+      };
+      sync();
+      fb.addEventListener('click', () => {
+        window.__setFocus(document.documentElement.getAttribute('data-focus') !== 'on');
+        sync();
+      });
+      new MutationObserver(sync).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-focus'],
+      });
+    }
   })();
 </script>

@@ -121,6 +121,10 @@ const bgModes = {
       <input type="checkbox" id="comments-toggle" />
       <span>评论区（GitHub Discussions，需可访问 giscus.app 才能加载）</span>
     </label>
+    <label class="setting">
+      <input type="checkbox" id="focus-toggle" />
+      <span>专注阅读模式（隐藏背景动效、加宽正文，长文更沉浸）</span>
+    </label>
     <p class="sub">系统开启"减少动态效果"时，全站动效会自动降级为静态排版。</p>
   </section>
 </BaseLayout>
@@ -276,4 +280,17 @@ const bgModes = {
     try { localStorage.setItem('comments', v); } catch (e) {}
     root.setAttribute('data-comments', v);
   });
+
+  // 专注阅读模式
+  const fz = document.getElementById('focus-toggle');
+  if (fz) {
+    fz.checked = (localStorage.getItem('focus') || 'off') === 'on';
+    fz.addEventListener('change', () => {
+      if (window.__setFocus) window.__setFocus(fz.checked);
+      else {
+        root.setAttribute('data-focus', fz.checked ? 'on' : 'off');
+        try { localStorage.setItem('focus', fz.checked ? 'on' : 'off'); } catch (e) {}
+      }
+    });
+  }
 </script>

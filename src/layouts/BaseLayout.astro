@@ -53,10 +53,13 @@ const websiteLd = {
         try {
           var root = document.documentElement;
           var s = localStorage.getItem('skin') || 'cosmic';
-          var t = localStorage.getItem('theme');
-          if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          var tRaw = localStorage.getItem('theme');
+          var mqLight = window.matchMedia('(prefers-color-scheme: light)');
+          function resolveTheme(v){ if(!v || v==='auto') return mqLight.matches ? 'light':'dark'; return v; }
           root.setAttribute('data-skin', s);
-          root.setAttribute('data-theme', t);
+          root.setAttribute('data-theme', resolveTheme(tRaw));
+          // 专注阅读模式
+          if ((localStorage.getItem('focus') || 'off') === 'on') root.setAttribute('data-focus', 'on');
           // 首次进入若没有记忆的背景，按皮肤×明暗选最契合的默认（避免 FOUC）
           var bgMap = {
             cosmic:  { dark: 'constellation', light: 'constellation' },
@@ -97,10 +100,11 @@ const websiteLd = {
         try { localStorage.setItem('skin', s); } catch (e) {}
         markActive();
       }
-      function setTheme(t) {
-        root.setAttribute('data-theme', t);
-        try { localStorage.setItem('theme', t); } catch (e) {}
-        updateThemeIcon();
+      function resolveTheme(v){ var mq=window.matchMedia('(prefers-color-scheme: light)'); if(!v||v==='auto') return mq.matches?'light':'dark'; return v; }
+      function setTheme(v) {
+        try { localStorage.setItem('theme', v); } catch (e) {}
+        root.setAttribute('data-theme', resolveTheme(v));
+        updateThemeIcon(v);
       }
       function markActive() {
         const cur = root.getAttribute('data-skin');
@@ -108,16 +112,20 @@ const websiteLd = {
           b.classList.toggle('is-active', b.getAttribute('data-skin-set') === cur);
         });
       }
-      function updateThemeIcon() {
+      function updateThemeIcon(v) {
         const i = document.querySelector('[data-theme-toggle]');
-        if (i) i.textContent = root.getAttribute('data-theme') === 'dark' ? '☀' : '☾';
+        if (!i) return;
+        const mode = v || localStorage.getItem('theme') || 'auto';
+        i.textContent = mode === 'light' ? '☾' : mode === 'auto' ? '🖥' : '☀';
+        i.setAttribute('aria-label', mode === 'auto' ? '跟随系统（自动）' : mode === 'light' ? '切换为深色' : '切换为浅色');
       }
       document.querySelectorAll('[data-skin-set]').forEach((b) => {
         b.addEventListener('click', () => setSkin(b.getAttribute('data-skin-set')));
       });
       const tt = document.querySelector('[data-theme-toggle]');
       if (tt) tt.addEventListener('click', () => {
-        setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        const cur = localStorage.getItem('theme') || 'auto';
+        setTheme(cur === 'dark' ? 'light' : cur === 'light' ? 'auto' : 'dark');
       });
       const trig = document.querySelector('[data-skin-trigger]');
       const panel = document.querySelector('[data-skin-panel]');
@@ -132,6 +140,28 @@ const websiteLd = {
       }
       markActive();
       updateThemeIcon();
+      // 自动主题：auto 模式实时跟随系统配色偏好
+      window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+        if ((localStorage.getItem('theme') || 'auto') === 'auto') {
+          root.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+          updateThemeIcon('auto');
+        }
+      });
+      // 专注阅读模式（控制台 / 文章页调用 window.__setFocus）
+      window.__setFocus = function (on) {
+        root.setAttribute('data-focus', on ? 'on' : 'off');
+        try { localStorage.setItem('focus', on ? 'on' : 'off'); } catch (e) {}
+      };
+      // 搜索快捷键：按 / 聚焦搜索（输入框内不触发）
+      document.addEventListener('keydown', (e) => {
+        if (e.key === '/' && !/^(input|textarea|select)$/i.test(e.target.tagName) && !e.target.isContentEditable) {
+          e.preventDefault();
+          if (location.pathname === '/search') {
+            const s = document.getElementById('search') || document.querySelector('.pagefind-ui__search-input');
+            if (s) s.focus();
+          } else location.assign('/search');
+        }
+      });
     </script>
 
     <button id="to-top" aria-label="返回顶部">↑</button>

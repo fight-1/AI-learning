@@ -265,12 +265,24 @@ html[data-theme='dark'] .astro-code span {
   color: var(--shiki-dark) !important;
 }
 .astro-code {
+  position: relative;
   padding: 1rem 1.1rem;
   border-radius: var(--radius);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
   overflow-x: auto;
   font-size: 13px;
   line-height: 1.6;
+  box-shadow: 0 10px 30px -18px var(--glow);
+}
+.astro-code::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  opacity: 0.7;
 }
 
 /* ============================================================
@@ -1134,4 +1146,14 @@ body.cryo-mode main::before {
   cursor: pointer; border-radius: 999px;
 }
 .qr-box .qr-close:hover { color: var(--accent); }
+
+/* ============================================================
+   专注阅读模式：隐藏背景动效 + 加宽正文
+   ============================================================ */
+html[data-focus='on'] #bg { display: none !important; }
+html[data-focus='on'] .detail-body { grid-template-columns: 1fr; }
+html[data-focus='on'] .side { display: none; }
+html[data-focus='on'] .content { max-width: 720px; margin: 0 auto; }
+html[data-focus='on'] .comm-channel,
+html[data-focus='on'] .giscus { opacity: 0.6; }
 

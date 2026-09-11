@@ -15,6 +15,7 @@ const stats = { notes: notes.length, tags: tags.length, cats: cats.length };
     <p class="hero-kicker">AI LEARNING NOTES</p>
     <h1 class="hero-title glow-text">fight-1 的 AI 学习笔记</h1>
     <p class="hero-sub">把 Agent · Skill · MCP · LLM · Token 优化 · UI 设计… 学懂、记下、串起来。</p>
+    <p class="hero-type">正在探索：<span id="typed"></span><span class="caret" aria-hidden="true"></span></p>
     <div class="hero-actions">
       <a href="/notes" class="btn btn-primary">开始阅读</a>
       <a href="/subscribe" class="btn">RSS 订阅</a>
@@ -47,10 +48,66 @@ const stats = { notes: notes.length, tags: tags.length, cats: cats.length };
   </section>
 </BaseLayout>
 
+<script>
+  (function () {
+    const el = document.getElementById('typed');
+    if (!el) return;
+    const words = ['Agent 编排', 'Skill 工程', 'MCP 协议', 'LLM 应用', 'Token 优化', 'UI 设计', '向量检索', '多智能体协作'];
+    let wi = 0, ci = 0, del = false;
+    function tick() {
+      const w = words[wi];
+      el.textContent = w.slice(0, ci);
+      if (!del && ci < w.length) ci++;
+      else if (!del && ci === w.length) { del = true; setTimeout(tick, 1400); return; }
+      else if (del && ci > 0) ci--;
+      else { del = false; wi = (wi + 1) % words.length; ci = 0; }
+      setTimeout(tick, del ? 45 : 110);
+    }
+    tick();
+  })();
+</script>
+
 <style>
   .hero {
+    position: relative;
     text-align: center;
-    padding: 48px 0 36px;
+    padding: 56px 0 40px;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -45%;
+    left: 50%;
+    width: 760px;
+    height: 760px;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, var(--glow) 0%, transparent 62%);
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .hero-type {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 8px 0 22px;
+    min-height: 22px;
+  }
+  .hero-type #typed {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .caret {
+    display: inline-block;
+    width: 2px;
+    height: 1.05em;
+    margin-left: 2px;
+    vertical-align: -2px;
+    background: var(--accent);
+    animation: caret-blink 1s steps(1) infinite;
+  }
+  @keyframes caret-blink {
+    50% { opacity: 0; }
   }
   .hero-kicker {
     letter-spacing: 4px;
