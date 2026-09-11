@@ -2,6 +2,7 @@
 
 > **现状**：Astro 5 静态站，Cloudflare Pages 部署（`ai-learning-3wy.pages.dev`）。
 > 已具备：多皮肤 + 配色工坊、动态背景（力场/点击/古文）、订阅页 `/subscribe`、RSS、KV 访客计数器。
+> **已完成**：✅ 第一批 SEO/分享（sitemap.xml / og:*/twitter:* / JSON-LD / canonical / robots.txt / 404 页）+ 页脚 GitHub 链接 + 文章页分享栏（复制链接/微博/X/微信二维码）。
 > **约束**：纯静态无后端（点赞/收藏用 localStorage）；Chrome 152 已移除 XSLT；`SITE` 已为正式域名。
 > **目标**：在不引入复杂后端的前提下，系统提升 SEO/分享、搜索、性能、可观测性与交互体验。
 >
@@ -97,7 +98,7 @@
 
 ## 推荐落地顺序
 
-1. **第一批（🔴 高，半天）**：`@astrojs/sitemap` + OG/Twitter 元信息 + canonical + `robots.txt` + 404 页。
+1. **第一批（🔴 高）**：`@astrojs/sitemap` + OG/Twitter 元信息 + canonical + `robots.txt` + 404 页 + 页脚 GitHub 链接 + 文章页分享栏 —— ✅ 已完成。
 2. **第二批（🔴 高）**：Pagefind 站内搜索 + 搜索框 UI。
 3. **第三批（🟡 中）**：Cloudflare Web Analytics + giscus 评论。
 4. **第四批（🟡 中）**：性能（图片/字体/canvas 自适应）+ TOC/进度条/移动端触控。
