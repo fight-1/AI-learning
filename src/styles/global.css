@@ -583,6 +583,42 @@ footer {
   border-color: var(--accent);
   color: var(--accent);
 }
+/* 快捷键面板（按 ? 打开） */
+.shortcut-help {
+  position: fixed;
+  inset: 0;
+  z-index: 9900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+.shortcut-help .sh-card {
+  width: min(420px, 92vw);
+  padding: 20px 22px;
+  background: var(--surface);
+  border: 1px solid var(--accent-color);
+  border-radius: 16px;
+  box-shadow: 0 0 30px var(--glow);
+  color: var(--text);
+}
+.shortcut-help h3 { margin: 0 0 12px; font-size: 16px; }
+.shortcut-help ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.shortcut-help li { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.shortcut-help kbd {
+  min-width: 34px;
+  text-align: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent-color);
+}
+.shortcut-help .sh-foot { margin: 14px 0 0; font-size: 11px; color: var(--muted); }
+
 /* 移动端安全区：避开 iPhone 底部横条，防止遮挡固定按钮与正文末尾 */
 @supports (bottom: env(safe-area-inset-bottom)) {
   #to-top {
@@ -747,6 +783,20 @@ footer {
   font-weight: 700;
   white-space: nowrap;
 }
+/* 本地讯息备份工具 */
+.comm-tools { display: flex; gap: 8px; margin: 0 0 12px; }
+.comm-tool {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.comm-tool:hover { color: var(--accent-color); border-color: var(--accent-color); }
+.comm-tool:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 1px; }
 #comm-form { display: flex; gap: 8px; margin-bottom: 14px; }
 #comm-input {
   flex: 1;

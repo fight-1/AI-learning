@@ -210,6 +210,48 @@ const websiteLd = {
         );
       })();
 
+      // 快捷键面板：? 打开一览；F 专注阅读 / T 切换主题 / G 回顶部 / Esc 关闭
+      (function () {
+        const ROWS = [
+          ['/', '聚焦搜索（站内全文检索）'],
+          ['F', '切换专注阅读模式'],
+          ['T', '循环切换 深色 / 浅色 / 跟随系统'],
+          ['G', '回到顶部'],
+          ['?', '打开 / 关闭本面板'],
+          ['Esc', '关闭面板'],
+        ];
+        let box = null;
+        function close() {
+          if (box) { box.remove(); box = null; }
+        }
+        function open() {
+          if (box) return;
+          box = document.createElement('div');
+          box.className = 'shortcut-help';
+          box.innerHTML =
+            '<div class="sh-card" role="dialog" aria-label="快捷键一览"><h3>⌨️ 快捷键</h3><ul>' +
+            ROWS.map((r) => '<li><kbd>' + r[0] + '</kbd><span>' + r[1] + '</span></li>').join('') +
+            '</ul><p class="sh-foot">按 Esc 或点击空白处关闭</p></div>';
+          box.addEventListener('click', (ev) => { if (ev.target === box) close(); });
+          document.body.appendChild(box);
+        }
+        document.addEventListener('keydown', (e) => {
+          const tag = (e.target.tagName || '').toLowerCase();
+          if (/^(input|textarea|select)$/.test(tag) || e.target.isContentEditable) return;
+          if (e.key === '?' || (e.key === '/' && e.shiftKey)) { e.preventDefault(); box ? close() : open(); return; }
+          if (e.key === 'Escape') { close(); return; }
+          if (box) return;
+          if (e.key === 'f' || e.key === 'F') {
+            if (window.__setFocus) window.__setFocus(document.documentElement.getAttribute('data-focus') !== 'on');
+          } else if (e.key === 't' || e.key === 'T') {
+            const b = document.querySelector('[data-theme-toggle]');
+            if (b) b.click();
+          } else if (e.key === 'g' || e.key === 'G') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        });
+      })();
+
       // 搜索快捷键：按 / 聚焦搜索（输入框内不触发）
       document.addEventListener('keydown', (e) => {
         if (e.key === '/' && !/^(input|textarea|select)$/i.test(e.target.tagName) && !e.target.isContentEditable) {
