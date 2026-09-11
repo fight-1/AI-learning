@@ -44,6 +44,21 @@ if (top) {
   top.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
+// 3.5) 阅读进度条
+const rbar = document.getElementById('read-progress');
+if (rbar) {
+  const fill = rbar.firstElementChild;
+  const upd = () => {
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - doc.clientHeight;
+    const p = max > 0 ? Math.min(1, (window.scrollY || doc.scrollTop) / max) : 0;
+    fill.style.transform = 'scaleX(' + p + ')';
+  };
+  window.addEventListener('scroll', upd, { passive: true });
+  window.addEventListener('resize', upd, { passive: true });
+  upd();
+}
+
 // 4) 代码复制
 document.querySelectorAll('pre.astro-code').forEach((pre) => {
   const btn = document.createElement('button');

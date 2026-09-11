@@ -572,6 +572,25 @@ footer {
   color: var(--accent);
 }
 
+/* 阅读进度条 */
+#read-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 60;
+  pointer-events: none;
+  background: transparent;
+}
+#read-progress > div {
+  height: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 8px var(--glow, var(--accent));
+}
+
 /* 代码复制按钮 */
 .astro-code {
   position: relative;

@@ -8,7 +8,7 @@ import { POEMS } from '../lib/poems.ts';
   let W = 0, H = 0, DPR = 1;
 
   function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    DPR = Math.min(window.devicePixelRatio || 1, (window.innerWidth <= 768) ? 1.5 : 2);
     W = window.innerWidth;
     H = window.innerHeight;
     canvas.width = Math.floor(W * DPR);
@@ -35,11 +35,37 @@ import { POEMS } from '../lib/poems.ts';
   const pointer = { x: -9999, y: -9999, active: false };
   // 交互开关：data-bg-force（repel/attract/auto/off）、data-bg-click（on/off）
   const settings = { force: 'repel', click: 'on' };
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  let lowPerf = false;
+  function detectPerf() {
+    const c = navigator.connection || {};
+    if (c.saveData) lowPerf = true;            // 弱网/省流量
+    if (isTouch && window.innerWidth <= 768) lowPerf = true; // 窄屏触摸设备
+  }
+  detectPerf();
   function readSettings() {
-    const f = document.documentElement.getAttribute('data-bg-force');
-    settings.force = (!f || f === 'on') ? 'repel' : (f === 'off' ? 'off' : f);
-    const c = document.documentElement.getAttribute('data-bg-click');
-    settings.click = (!c || c === 'on') ? 'on' : 'off';
+    const sf = localStorage.getItem('bg_force');
+    const sc = localStorage.getItem('bg_click');
+    const f = document.documentElement.getAttribute('data-bg-force') || sf || 'repel';
+    settings.force = (f === 'off') ? 'off' : f;
+    const c = document.documentElement.getAttribute('data-bg-click') || sc || 'on';
+    settings.click = (c === 'off') ? 'off' : c;
+    // 移动端/弱机降级：默认关力场与点击动效（用户显式开启则尊重）
+    if (lowPerf) {
+      if (!sf) settings.force = 'off';
+      if (!sc) settings.click = 'off';
+    }
+  }
+  // 低电量异步检测（不阻塞首帧），命中即降级并重新读取开关
+  if (navigator.getBattery) {
+    navigator.getBattery().then((b) => {
+      const chk = () => {
+        if (b.level < 0.2 && !b.charging) { lowPerf = true; readSettings(); }
+      };
+      chk();
+      b.addEventListener('levelchange', chk);
+      b.addEventListener('chargingchange', chk);
+    }).catch(() => {});
   }
 
   function rgba(hex, al) {
@@ -1062,6 +1088,14 @@ import { POEMS } from '../lib/poems.ts';
 
   window.addEventListener('pointermove', (e) => { pointer.x = e.clientX; pointer.y = e.clientY; pointer.active = true; }, { passive: true });
   document.addEventListener('mouseleave', () => { pointer.active = false; pointer.x = -9999; pointer.y = -9999; });
+  // 移动端触控力场：触摸也驱动粒子排斥
+  if (isTouch) {
+    const setP = (e) => { const t = e.touches[0]; if (!t) return; pointer.x = t.clientX; pointer.y = t.clientY; pointer.active = true; };
+    window.addEventListener('touchmove', setP, { passive: true });
+    window.addEventListener('touchstart', setP, { passive: true });
+    window.addEventListener('touchend', () => { pointer.active = false; }, { passive: true });
+    window.addEventListener('touchcancel', () => { pointer.active = false; }, { passive: true });
+  }
   window.addEventListener('blur', () => { pointer.active = false; });
   window.addEventListener('click', (e) => {
     if (reduce || settings.click === 'off') return;
