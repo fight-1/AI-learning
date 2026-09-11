@@ -272,19 +272,36 @@ const websiteLd = {
       import '../scripts/cursor.js';
       import '../scripts/landing.js';
       import { initAudio, blipThrottled, panFromX } from '../scripts/audio.js';
-      import { initRadar } from '../scripts/radar.js';
-      import { initCryo } from '../scripts/warp.js';
-      import { initComm } from '../scripts/interactions.js';
-      import { initAchievements, initEaster } from '../scripts/console.js';
       import '../scripts/visit-counter.js';
       initAudio();
-      initRadar();
-      // initWarp() 已关闭：克隆卡片放大→跳转的中间帧会被误认为「短暂进入新页面」，
-      // 体感割裂阅读流。改为原生即时跳转；保留导出 initWarp 以便日后控制台启用。
-      initCryo();
-      initComm();
-      initAchievements();
-      initEaster();
+      // 重模块按需加载：radar / warp / interactions / console 里用到了
+      // gsap 与 matter-js（合计百 KB 级）。改为动态 import 后会被拆成独立 chunk，
+      // 首屏不再打包它们；等空闲或用户首次交互时再加载。
+      let heavyStarted = false;
+      const startHeavy = async () => {
+        if (heavyStarted) return;
+        heavyStarted = true;
+        try {
+          const [radar, warp, inter, cons] = await Promise.all([
+            import('../scripts/radar.js'),
+            import('../scripts/warp.js'),
+            import('../scripts/interactions.js'),
+            import('../scripts/console.js'),
+          ]);
+          radar.initRadar();
+          warp.initCryo();
+          inter.initComm();
+          cons.initAchievements();
+          cons.initEaster();
+        } catch (e) {}
+      };
+      // 注：initWarp() 已关闭（克隆卡片放大→跳转的中间帧体感割裂），保留导出待日后启用
+      if ('requestIdleCallback' in window) requestIdleCallback(() => startHeavy(), { timeout: 2000 });
+      else setTimeout(startHeavy, 300);
+      // 用户先交互则立即加载，保证点击即有反馈
+      ['pointerdown', 'keydown', 'touchstart'].forEach((ev) =>
+        window.addEventListener(ev, startHeavy, { once: true, passive: true })
+      );
       // 星际广播发送音效
       document.addEventListener('comm:sent', () => blipThrottled(760, 0));
     </script>
