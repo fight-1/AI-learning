@@ -162,6 +162,14 @@ const breadcrumbLd = {
     <section class="comm-channel">
       <h2>📻 通讯频道</h2>
       <p class="muted">发表评论即向星际广播，讯息以抛物线落入频道。</p>
+      <p class="comm-local-note">
+        <span class="comm-local-badge">💾 仅本地可见</span>
+        <span>
+          这里的讯息只保存在<strong>你这台设备的浏览器</strong>（localStorage，按文章分别存储），
+          <strong>不会上传服务器、其他访客看不到</strong>；清理浏览器数据或换设备后不会保留。
+          想公开留言请用下方「评论（GitHub）」。
+        </span>
+      </p>
       <form id="comm-form">
         <input id="comm-input" type="text" placeholder="向星际广播一条讯息…" autocomplete="off" />
         <button type="submit">发送</button>

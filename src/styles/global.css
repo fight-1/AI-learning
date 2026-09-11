@@ -704,6 +704,32 @@ footer {
 }
 .comm-channel h2 { font-size: 18px; margin: 0 0 4px; }
 .comm-channel .muted { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+/* 「仅本地可见」便签提示：说明讯息只存 localStorage，不上传 */
+.comm-local-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-left: 3px solid var(--accent-color);
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.comm-local-note strong { color: var(--text); font-weight: 600; }
+.comm-local-badge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-color);
+  color: #04121a;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
 #comm-form { display: flex; gap: 8px; margin-bottom: 14px; }
 #comm-input {
   flex: 1;
