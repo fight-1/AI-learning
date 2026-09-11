@@ -11,6 +11,10 @@ const notes = defineCollection({
     updated: z.coerce.date().optional(),
     // 成熟度：草稿 / 成长中 / 已打磨。用于让读者判断可信度，可按 maturity 筛选。
     maturity: z.enum(['draft', 'growing', 'polished']).default('growing'),
+    // 所属系列（可选）：同系列文章在 /series 聚合，文章页显示系列内上一篇/下一篇。
+    series: z.string().optional(),
+    // 系列内排序（默认 0，按 date 兜底）
+    seriesOrder: z.number().default(0),
     category: z.string(),
     tags: z.array(z.string()).default([]),
     summary: z.string().default(''),

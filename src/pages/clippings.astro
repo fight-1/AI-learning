@@ -1,0 +1,105 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="我的摘录 · fight-1" description="本机保存的文章摘录（localStorage，不上传服务器）" noindex={true}>
+  <h1 class="cl-title">我的摘录</h1>
+  <p class="cl-sub">这些摘录只存在你这台浏览器（localStorage），<strong>不上传服务器</strong>。在任意文章里选中正文文字，点浮出的「📌 摘录」即可收藏。</p>
+
+  <div class="cl-toolbar">
+    <button id="cl-clear" class="cl-btn" type="button">清空全部</button>
+  </div>
+
+  <ul id="cl-list" class="cl-list"></ul>
+  <div id="cl-empty" class="empty-box" hidden>
+    <div class="empty-emoji">📌</div>
+    <p>还没有摘录。打开任意文章，选中正文文字，点「📌 摘录」即可收藏。</p>
+  </div>
+</BaseLayout>
+
+<script>
+  import { getClippings, removeClipping, clearClippings } from '../scripts/clippings.js';
+
+  const list = document.getElementById('cl-list');
+  const empty = document.getElementById('cl-empty');
+  const esc = (s) =>
+    String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function render() {
+    const items = getClippings();
+    list.innerHTML =
+      items
+        .map(
+          (c) => `
+        <li class="cl-item" data-id="${esc(c.id)}">
+          <a class="cl-src" href="${esc(c.url)}">${esc(c.title)}</a>
+          <p class="cl-text">${esc(c.text)}</p>
+          <div class="cl-foot">
+            <span class="cl-time">${esc(new Date(c.ts).toLocaleString('zh-CN'))}</span>
+            <button class="cl-del" type="button" data-del="${esc(c.id)}">删除</button>
+          </div>
+        </li>`
+        )
+        .join('') || '';
+    empty.hidden = items.length > 0;
+    list.hidden = items.length === 0;
+  }
+
+  list.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-del]');
+    if (b && confirm('删除这条摘录？')) removeClipping(b.dataset.del);
+  });
+  document.getElementById('cl-clear').addEventListener('click', () => {
+    if (confirm('清空全部本地摘录？此操作不可恢复。')) clearClippings();
+  });
+  document.addEventListener('clippings:changed', render);
+  render();
+</script>
+
+<style>
+  .cl-title { font-size: 28px; margin: 0 0 6px; }
+  .cl-sub { color: var(--muted); margin-top: 0; margin-bottom: 20px; font-size: 14px; }
+  .cl-toolbar { margin-bottom: 16px; }
+  .cl-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .cl-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .cl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .cl-item {
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .cl-src { color: var(--accent); font-size: 14px; text-decoration: none; }
+  .cl-src:hover { text-decoration: none; }
+  .cl-text {
+    margin: 8px 0 10px;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .cl-foot { display: flex; align-items: center; justify-content: space-between; }
+  .cl-time { color: var(--muted); font-size: 12px; }
+  .cl-del {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: inherit;
+    padding: 3px 10px;
+    cursor: pointer;
+  }
+  .cl-del:hover { color: #ff8a8a; border-color: #ff8a8a; }
+</style>

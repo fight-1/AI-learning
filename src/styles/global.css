@@ -300,6 +300,27 @@ html[data-theme='dark'] .astro-code span {
 .prose :where(a) {
   color: var(--accent);
 }
+/* 双链 wiki-link：站内引用，加一个 ⟶ 标记与虚线下划线与普通外链区分 */
+.prose :where(a[data-wikilink]) {
+  color: var(--accent-2);
+  text-decoration: underline dotted color-mix(in srgb, var(--accent-2) 55%, transparent);
+  text-underline-offset: 3px;
+}
+.prose :where(a[data-wikilink])::after {
+  content: ' ⟶';
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+/* Mermaid 图表容器：渲染后内部是 SVG，居中并限制最大宽度 */
+.prose .mermaid {
+  margin: 18px 0;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.prose .mermaid svg { max-width: 100%; height: auto; }
 .prose :where(strong) {
   color: var(--text);
 }
@@ -1259,6 +1280,30 @@ body.cryo-mode main::before {
   opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s;
 }
 .share-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* 本地摘录：选区浮出按钮 + 提示 toast */
+.clip-fab {
+  position: fixed;
+  z-index: 9600;
+  display: none;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-color);
+  background: var(--surface);
+  color: var(--accent-color);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 0 18px var(--glow);
+  transition: opacity 0.15s;
+}
+.clip-fab:hover { background: var(--accent-color); color: var(--bg); }
+.clip-toast {
+  position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px);
+  z-index: 9700; padding: 10px 18px; border-radius: 999px;
+  background: var(--surface); color: var(--text); border: 1px solid var(--accent-color);
+  box-shadow: 0 0 20px var(--glow); font-size: 13px;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s;
+}
 /* 微信二维码弹窗 */
 .qr-overlay {
   position: fixed; inset: 0; z-index: 9800;

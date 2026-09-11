@@ -1,0 +1,93 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getNotes, getSeriesMap, formatDate } from '../../lib/notes';
+
+const notes = await getNotes();
+const seriesMap = getSeriesMap(notes);
+const seriesList = [...seriesMap.entries()].map(([name, items]) => ({ name, items }));
+---
+
+<BaseLayout title="系列 · fight-1 的 AI 学习笔记" description="按系列聚合的成组文章，便于循序渐进地读">
+  <h1 class="ser-title">系列</h1>
+  <p class="ser-sub">共 {seriesList.length} 个系列 · 把相关联的文章串成一条阅读线。</p>
+
+  {seriesList.length === 0 ? (
+    <div class="empty-box">
+      <div class="empty-emoji">📚</div>
+      <p>还没有任何系列。在文章 frontmatter 里加 <code>series: 系列名</code> 即可归组。</p>
+    </div>
+  ) : (
+    <div class="ser-list">
+      {seriesList.map((s) => (
+        <section class="ser-card" data-reveal>
+          <h2 class="ser-name">{s.name}<span class="ser-count">{s.items.length} 篇</span></h2>
+          <ol class="ser-items">
+            {s.items.map((n, i) => (
+              <li>
+                <span class="ser-idx">{i + 1}</span>
+                <a class="ser-link" href={`/notes/${n.id}`} data-astro-prefetch>{n.data.title}</a>
+                <span class="ser-meta">{formatDate(n.data.date)}{n.data.maturity === 'polished' && ' · 💎'}{n.data.maturity === 'draft' && ' · 🌱'}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
+    </div>
+  )}
+</BaseLayout>
+
+<style>
+  .ser-title { font-size: 28px; margin: 0 0 6px; }
+  .ser-sub { color: var(--muted); margin-top: 0; margin-bottom: 26px; font-size: 14px; }
+  .ser-list { display: flex; flex-direction: column; gap: 16px; }
+  .ser-card {
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .ser-name {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 19px;
+    margin: 0 0 14px;
+    color: var(--accent);
+  }
+  .ser-count { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .ser-items { list-style: none; margin: 0; padding: 0; counter-reset: none; display: flex; flex-direction: column; gap: 10px; }
+  .ser-items li {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    border-left: 3px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .ser-items li:hover { background: var(--surface-2); border-left-color: var(--accent); }
+  .ser-idx {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .ser-link { color: var(--text); text-decoration: none; font-size: 15px; }
+  .ser-link:hover { color: var(--accent); text-decoration: none; }
+  .ser-meta { color: var(--muted); font-size: 12px; margin-left: auto; white-space: nowrap; }
+  .empty-box {
+    text-align: center;
+    padding: 48px 20px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+  }
+  .empty-emoji { font-size: 36px; margin-bottom: 10px; }
+  .empty-box code { color: var(--accent); background: var(--surface-2); padding: 2px 6px; border-radius: 6px; }
+</style>

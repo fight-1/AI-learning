@@ -2,7 +2,7 @@
 import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toc from '../../components/Toc.astro';
-import { getNotes, formatDate, readingTime } from '../../lib/notes';
+import { getNotes, formatDate, readingTime, getBacklinks, getSeriesContext } from '../../lib/notes';
 import NoteCard from '../../components/NoteCard.astro';
 import type { GetStaticPaths } from 'astro';
 import fs from 'node:fs';
@@ -37,6 +37,9 @@ const MATURITY = {
 const mat = MATURITY[maturity] || MATURITY.growing;
 // 相关阅读：按标签重合度(权重2) + 同分类(权重1)打分取前4
 const allNotes = await getNotes();
+// 双链反向链接 + 系列上下文
+const backlinks = getBacklinks(note.id, allNotes);
+const seriesCtx = getSeriesContext(note.id, allNotes);
 const scored = allNotes
   .filter((n) => n.id !== note.id)
   .map((n) => {
@@ -161,6 +164,21 @@ const breadcrumbLd = {
       >⤓ MD</a>
     </div>
 
+    {seriesCtx && (
+      <nav class="series-bar" aria-label="系列导航">
+        <a class="series-name" href="/series" data-astro-prefetch>📚 {seriesCtx.name}</a>
+        <span class="series-pos">第 {seriesCtx.index + 1} / {seriesCtx.list.length} 篇</span>
+        <span class="series-nav">
+          {seriesCtx.prev
+            ? <a class="series-prev" href={`/notes/${seriesCtx.prev.id}`} data-astro-prefetch>← {seriesCtx.prev.data.title}</a>
+            : <span class="series-disabled">← 系列首篇</span>}
+          {seriesCtx.next
+            ? <a class="series-next" href={`/notes/${seriesCtx.next.id}`} data-astro-prefetch>下一篇 → {seriesCtx.next.data.title}</a>
+            : <span class="series-disabled">系列末篇 →</span>}
+        </span>
+      </nav>
+    )}
+
     <nav class="pager">
       {prev ? <a class="pager-link prev" href={`/notes/${prev.id}`}><span>← 上一篇</span><b>{prev.data.title}</b></a> : <span></span>}
       {next ? <a class="pager-link next" href={`/notes/${next.id}`}><span>下一篇 →</span><b>{next.data.title}</b></a> : <span></span>}
@@ -172,6 +190,20 @@ const breadcrumbLd = {
         {display.map((n) => <NoteCard note={n} />)}
       </div>
     </section>
+
+    {backlinks.length > 0 && (
+      <section class="backlinks" data-reveal>
+        <h2>🔗 被这些文章引用</h2>
+        <ul class="bl-list">
+          {backlinks.map((n) => (
+            <li>
+              <a href={`/notes/${n.id}`} data-astro-prefetch>{n.data.title}</a>
+              <span class="bl-cat"># {n.data.category}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
 
     <!-- 星际广播：评论区 -->
     <section class="comm-channel">
@@ -274,6 +306,11 @@ const breadcrumbLd = {
 <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
 
 <script>
+  import { initMermaid } from '../../scripts/mermaid-lazy.js';
+  import { initClippings } from '../../scripts/clippings.js';
+  initMermaid();
+  initClippings();
+
   // 通讯频道：本地持久化 + 嵌套回复（树形）
   (function () {
     const id = location.pathname;
@@ -635,6 +672,49 @@ const breadcrumbLd = {
   .related { margin-top: 44px; }
   .related h2 { font-size: 20px; margin: 0 0 16px; }
   .related .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+
+  /* 系列导航条 */
+  .series-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin-top: 28px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: 13px;
+  }
+  .series-name {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .series-name:hover { text-decoration: none; }
+  .series-pos { color: var(--muted); font-size: 12px; }
+  .series-nav { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-left: auto; }
+  .series-prev, .series-next { color: var(--text); text-decoration: none; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .series-prev:hover, .series-next:hover { color: var(--accent); text-decoration: none; }
+  .series-disabled { color: var(--muted); opacity: 0.6; }
+
+  /* 双链反向链接 */
+  .backlinks { margin-top: 44px; }
+  .backlinks h2 { font-size: 20px; margin: 0 0 16px; }
+  .bl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .bl-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .bl-list a { color: var(--text); text-decoration: none; }
+  .bl-list a:hover { color: var(--accent); text-decoration: none; }
+  .bl-cat { color: var(--muted); font-size: 12px; margin-left: auto; white-space: nowrap; }
   .giscus { margin-top: 44px; }
   .giscus h2 { font-size: 20px; margin: 0 0 8px; }
   .giscus .muted { margin: 0 0 14px; }

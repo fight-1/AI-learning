@@ -5,6 +5,8 @@ category: MCP
 tags: [连接器, 工具, 协议]
 summary: MCP 用一套标准协议把"工具/资源"暴露给任意支持它的客户端，本文用最小例子讲清 Server 怎么写。
 featured: true
+series: Agent 工程化
+seriesOrder: 2
 ---
 
 # 自建一个 MCP Server

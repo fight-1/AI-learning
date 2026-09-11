@@ -33,6 +33,50 @@ function rehypeCodeMeta() {
   return (tree) => walk(tree);
 }
 
+// 双链 wiki-link：把正文里的 [[slug]] / [[slug|标题]] 转成站内链接 /notes/<slug>/。
+// 跳过代码块与已有链接内的文本，避免误伤；零新增依赖（手写 mdast 遍历）。
+function remarkWikiLinks() {
+  const WIKILINK = /\[\[([^\]|\s]+)(?:\|([^\]]+))?\]\]/g;
+  const walk = (node) => {
+    if (!node || typeof node !== 'object' || !Array.isArray(node.children)) return;
+    const out = [];
+    for (const child of node.children) {
+      if (!child) { out.push(child); continue; }
+      // 链接/图片节点内部的文本不再处理
+      if (child.type === 'link' || child.type === 'linkReference' || child.type === 'image' || child.type === 'imageReference') {
+        out.push(child);
+        continue;
+      }
+      if (child.type === 'text') {
+        const value = child.value;
+        if (WIKILINK.test(value)) {
+          WIKILINK.lastIndex = 0;
+          let last = 0;
+          let m;
+          while ((m = WIKILINK.exec(value))) {
+            if (m.index > last) out.push({ type: 'text', value: value.slice(last, m.index) });
+            const slug = m[1].trim();
+            const label = (m[2] || slug.split('/').pop()).trim();
+            out.push({
+              type: 'link',
+              url: '/notes/' + slug + '/',
+              data: { hProperties: { 'data-wikilink': slug } },
+              children: [{ type: 'text', value: label }],
+            });
+            last = m.index + m[0].length;
+          }
+          if (last < value.length) out.push({ type: 'text', value: value.slice(last) });
+          continue;
+        }
+      }
+      walk(child);
+      out.push(child);
+    }
+    node.children = out;
+  };
+  return (tree) => walk(tree);
+}
+
 export default defineConfig({
   site: SITE,
   integrations: [
@@ -47,6 +91,7 @@ export default defineConfig({
       addLanguageClass: true,
     },
     rehypePlugins: [rehypeCodeMeta],
+    remarkPlugins: [remarkWikiLinks],
   },
   scopedStyleStrategy: 'class',
 });

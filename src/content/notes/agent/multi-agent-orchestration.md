@@ -7,6 +7,8 @@ tags: [编排, 反思循环, 框架对比]
 summary: 多智能体不是把多个模型堆一起，而是用"角色 + 通信 + 反思"把复杂任务拆给各司其职的 Agent。
 featured: true
 maturity: polished
+series: Agent 工程化
+seriesOrder: 1
 ---
 
 # 多智能体编排入门
@@ -38,4 +40,18 @@ def run(goal):
 - 任务长、易出错、需要多次工具调用 → 值得
 - 任务短、确定性高 → 单 Agent + 好 Prompt 更省 token
 
-下一步可看 [MCP](/notes/mcp/build-your-own-mcp/) 如何给这些 Agent 接上外部能力。
+## 编排流程图
+
+```mermaid
+flowchart TD
+  A[目标 Goal] --> B(规划 Planner)
+  B --> C{需要工具?}
+  C -->|是| D[执行 Worker]
+  C -->|否| E[汇总答案]
+  D --> F{评审 Critic}
+  F -->|不通过| B
+  F -->|通过| E
+  E --> G[返回结果]
+```
+
+下一步可看 [[mcp/build-your-own-mcp|MCP]] 如何给这些 Agent 接上外部能力。
