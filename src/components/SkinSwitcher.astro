@@ -55,6 +55,13 @@ const defaultBg = { cosmic: 'constellation', cyber: 'matrix', xianxia: 'rune', i
         <button class="fx-opt" data-click-set="off">关</button>
       </div>
     </div>
+    <div class="fx-row">
+      <span class="fx-lab">评论区</span>
+      <div class="fx-opts">
+        <button class="fx-opt" data-comments-set="on">开</button>
+        <button class="fx-opt" data-comments-set="off">关</button>
+      </div>
+    </div>
   </div>
 
   <p class="skin-title" style="margin-top:12px">配色（预设 / 色轮自定义）</p>
@@ -347,7 +354,12 @@ const defaultBg = { cosmic: 'constellation', cyber: 'matrix', xianxia: 'rune', i
   function reflectClick() { const v = root.getAttribute('data-bg-click') || 'on'; document.querySelectorAll('[data-click-set]').forEach((b) => b.classList.toggle('is-active', b.getAttribute('data-click-set') === v)); }
   document.querySelectorAll('[data-force-set]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); setForce(b.getAttribute('data-force-set')); }));
   document.querySelectorAll('[data-click-set]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); setClick(b.getAttribute('data-click-set')); }));
+  // 评论区开关（默认关，开启后文章页懒加载 giscus）
+  function setComments(v) { root.setAttribute('data-comments', v); try { localStorage.setItem('comments', v); } catch (e) {} reflectComments(); }
+  function reflectComments() { const v = root.getAttribute('data-comments') || 'off'; document.querySelectorAll('[data-comments-set]').forEach((b) => b.classList.toggle('is-active', b.getAttribute('data-comments-set') === v)); }
+  document.querySelectorAll('[data-comments-set]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); setComments(b.getAttribute('data-comments-set')); }));
   reflectForce();
   reflectClick();
+  reflectComments();
   renderBg();
 </script>

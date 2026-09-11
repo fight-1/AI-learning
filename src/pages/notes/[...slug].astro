@@ -130,26 +130,49 @@ const articleLd = {
       <div id="comm-list"></div>
     </section>
 
-    <!-- giscus 评论：GitHub Discussions + giscus app 已开启；data-category-id 可选，按分类名称匹配 -->
-    <section class="giscus" id="giscus-comments">
-      <h2>💬 评论（GitHub）</h2>
-      <p class="muted">使用 GitHub 账号登录即可发表评论，由 giscus 驱动，数据存于 GitHub Discussions。</p>
-      <script is:inline src="https://giscus.app/client.js"
-        data-repo="fight-1/AI-learning"
-        data-repo-id="612522224"
-        data-category="General"
-        data-mapping="pathname"
-        data-strict="0"
-        data-reactions-enabled="1"
-        data-emit-metadata="0"
-        data-input-position="bottom"
-        data-theme="preferred_color_scheme"
-        data-lang="zh-CN"
-        data-loading="lazy"
-        crossorigin="anonymous"
-        async>
-      </script>
-    </section>
+  <!-- giscus 评论：默认关闭，由下方脚本按 localStorage.comments 懒加载；
+       开启后才会注入 giscus.app/client.js，避免默认无谓外网请求与加载问题 -->
+  <section class="giscus" id="giscus-comments">
+    <h2>💬 评论（GitHub）</h2>
+    <p class="muted" data-giscus-hint>评论区默认关闭。可在「舰长控制台 → 航行设置」或战甲面板「动态交互 → 评论区」开启（需可访问 giscus.app）。</p>
+  </section>
+  <script is:inline>
+    (function () {
+      var host = document.getElementById('giscus-comments');
+      if (!host) return;
+      function load() {
+        if (host.querySelector('script[data-giscus]')) return;
+        var s = document.createElement('script');
+        s.src = 'https://giscus.app/client.js';
+        s.setAttribute('data-giscus', '');
+        s.setAttribute('data-repo', 'fight-1/AI-learning');
+        s.setAttribute('data-repo-id', '612522224');
+        s.setAttribute('data-category', 'General');
+        s.setAttribute('data-mapping', 'pathname');
+        s.setAttribute('data-strict', '0');
+        s.setAttribute('data-reactions-enabled', '1');
+        s.setAttribute('data-emit-metadata', '0');
+        s.setAttribute('data-input-position', 'bottom');
+        s.setAttribute('data-theme', 'preferred_color_scheme');
+        s.setAttribute('data-lang', 'zh-CN');
+        s.setAttribute('data-loading', 'lazy');
+        s.crossOrigin = 'anonymous';
+        s.async = true;
+        host.appendChild(s);
+      }
+      function unload() {
+        var s = host.querySelector('script[data-giscus]'); if (s) s.remove();
+        var f = host.querySelector('iframe.giscus-frame'); if (f) f.remove();
+      }
+      function apply() {
+        var on = (localStorage.getItem('comments') || 'off') === 'on';
+        if (on) load(); else unload();
+        document.documentElement.setAttribute('data-comments', on ? 'on' : 'off');
+      }
+      apply();
+      new MutationObserver(apply).observe(document.documentElement, { attributes: true, attributeFilter: ['data-comments'] });
+    })();
+  </script>
   </article>
 </BaseLayout>
 

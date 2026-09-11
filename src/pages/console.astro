@@ -117,6 +117,10 @@ const bgModes = {
       <input type="checkbox" id="fx-click-toggle" />
       <span>鼠标点击动效（涟漪 / 粒子）</span>
     </label>
+    <label class="setting">
+      <input type="checkbox" id="comments-toggle" />
+      <span>评论区（GitHub Discussions，需可访问 giscus.app 才能加载）</span>
+    </label>
     <p class="sub">系统开启"减少动态效果"时，全站动效会自动降级为静态排版。</p>
   </section>
 </BaseLayout>
@@ -263,4 +267,13 @@ const bgModes = {
   fa.addEventListener('change', applyForce);
   fk.addEventListener('change', applyClick);
   reflectForceUI();
+
+  // 评论区开关（默认关，开启后文章页懒加载 giscus）
+  const cmt = document.getElementById('comments-toggle');
+  cmt.checked = (localStorage.getItem('comments') || 'off') === 'on';
+  cmt.addEventListener('change', () => {
+    const v = cmt.checked ? 'on' : 'off';
+    try { localStorage.setItem('comments', v); } catch (e) {}
+    root.setAttribute('data-comments', v);
+  });
 </script>
