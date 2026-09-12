@@ -14,15 +14,21 @@ export function initGraph() {
   let nodes = [];
   let edges = [];
   let adj = new Map();
+  let comps = [];
   let raf = 0;
   let ticks = 0;
-  const sim = { a: 0.025, rep: 520, damp: 0.89, min: 0.35 };
+  // 力导向参数（2026-09-12 调优，连通分量布局）：
+  //  - 不依赖单一全局中心力（会让互不相连的分量要么塌中心、要么钉边界，无稳定中间态）
+  //  - 改为「每个连通分量放到画布椭圆均布的初始槽位，节点用 homeK 弹力回归本分量中心」
+  //  - k 为斥力系数（防重叠），link/ideal 为分量内弹簧（让三角紧凑）
+  const sim = { k: 0.4, homeK: 0.02, damp: 0.9, link: 0.05, ideal: 60, spread: 0.32 };
 
   function resize() {
     const rect = wrap.getBoundingClientRect();
     W = rect.width || W;
     H = Math.max(360, Math.min(640, Math.round(W * 0.62)));
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    if (comps.length) computeHomes();
   }
 
   function showInfo(text) {
@@ -31,17 +37,41 @@ export function initGraph() {
 
   function build(data) {
     const count = data.nodes.length || 1;
-    nodes = data.nodes
-      .map((n, i) => ({
-        id: n.id,
-        count: n.count,
-        r: 7 + Math.sqrt(n.count) * 3.4,
-        x: W / 2 + Math.cos((i / count) * Math.PI * 2) * (Math.min(W, H) * 0.22) + (Math.random() - 0.5) * 30,
-        y: H / 2 + Math.sin((i / count) * Math.PI * 2) * (Math.min(W, H) * 0.22) + (Math.random() - 0.5) * 30,
-        vx: 0,
-        vy: 0,
-      }))
-      .sort((a, b) => b.count - a.count);
+    const rawNodes = data.nodes.map((n) => ({ id: n.id, count: n.count || 1 }));
+    // 连通分量（并查集）：互不相连的分量要分到不同槽位，避免挤成一团
+    const parent = rawNodes.map((_, i) => i);
+    const find = (x) => {
+      while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+      return x;
+    };
+    data.edges.forEach(([a, b]) => {
+      const ia = data.nodes[a] ? find(a) : -1;
+      const ib = data.nodes[b] ? find(b) : -1;
+      if (ia >= 0 && ib >= 0 && ia !== ib) parent[ia] = ib;
+    });
+    const compMap = new Map();
+    rawNodes.forEach((_, i) => {
+      const r = find(i);
+      if (!compMap.has(r)) compMap.set(r, []);
+      compMap.get(r).push(i);
+    });
+    comps = Array.from(compMap.values());
+
+    nodes = rawNodes.map((n, i) => ({
+      id: n.id,
+      count: n.count,
+      r: 7 + Math.sqrt(n.count) * 3.4,
+      x: W / 2,
+      y: H / 2,
+      vx: 0,
+      vy: 0,
+      fx: 0,
+      fy: 0,
+      hx: W / 2,
+      hy: H / 2,
+    }));
+    computeHomes();
+
     const idx = new Map(nodes.map((n, i) => [n.id, i]));
     edges = data.edges
       .filter(([a, b]) => idx.has(data.nodes[a].id) && idx.has(data.nodes[b].id))
@@ -55,6 +85,27 @@ export function initGraph() {
     render();
     showInfo(`${nodes.length} 个标签 · ${edges.length} 条关联 · 悬浮高亮邻居`);
     loop();
+  }
+
+  // 每个连通分量放到画布椭圆上均布的初始槽位；分量内节点绕自身槽位小环排布
+  function computeHomes() {
+    const n = comps.length;
+    comps.forEach((c, ci) => {
+      const ang = (ci / n) * Math.PI * 2 - Math.PI / 2;
+      const cx = W / 2 + Math.cos(ang) * W * sim.spread;
+      const cy = H / 2 + Math.sin(ang) * H * sim.spread * 0.92;
+      c.forEach((gi, li) => {
+        const la = (li / c.length) * Math.PI * 2;
+        const lr = c.length > 1 ? 30 + c.length * 4 : 0;
+        const node = nodes[gi];
+        node.hx = cx + Math.cos(la) * lr;
+        node.hy = cy + Math.sin(la) * lr;
+        if (ticks === 0) {
+          node.x = node.hx + (Math.random() - 0.5) * 10;
+          node.y = node.hy + (Math.random() - 0.5) * 10;
+        }
+      });
+    });
   }
 
   function render() {
@@ -77,6 +128,7 @@ export function initGraph() {
     nodes.forEach((n, i) => {
       const g = document.createElementNS(NS, 'g');
       g.setAttribute('data-i', String(i));
+      g.setAttribute('transform', `translate(${n.x.toFixed(2)}, ${n.y.toFixed(2)})`);
       g.style.cursor = 'pointer';
       const c = document.createElementNS(NS, 'circle');
       c.setAttribute('r', String(n.r));
@@ -131,15 +183,14 @@ export function initGraph() {
   }
 
   function step() {
-    const pad = 18;
-    const cx = W / 2;
-    const cy = H / 2;
-    // 前 120 帧中心引力更强，帮助从初始紧凑圆环快速展开到画布中央
-    const centerK = sim.a * (ticks < 120 ? 2.2 : 1.0);
+    const pad = 46;
+    // 斥力随画布面积/节点数自适应，保证不同屏宽下填充率一致、只防重叠
+    const rep = sim.k * ((W * H) / Math.max(1, nodes.length));
 
+    // 每个节点回归本连通分量的中心槽位（替代全局中心力，避免塌中心/钉边界）
     nodes.forEach((n) => {
-      n.fx = (cx - n.x) * centerK;
-      n.fy = (cy - n.y) * centerK;
+      n.fx = (n.hx - n.x) * sim.homeK;
+      n.fy = (n.hy - n.y) * sim.homeK;
     });
 
     for (let i = 0; i < nodes.length; i++) {
@@ -151,9 +202,9 @@ export function initGraph() {
         let d2 = dx * dx + dy * dy;
         if (d2 < 0.001) { d2 = 0.001; dx = 0.7; dy = 0.7; }
         const d = Math.sqrt(d2);
-        const minD = a.r + b.r + 10;
-        const rep = sim.rep * (1 + (a.count + b.count) * 0.05);
-        const f = (d < minD ? rep * 2.5 : rep) / d2;
+        const minD = a.r + b.r + 12;
+        const rp = rep * (1 + (a.count + b.count) * 0.05);
+        const f = (d < minD ? rp * 2.5 : rp) / d2;
         const ux = dx / d;
         const uy = dy / d;
         a.fx += ux * f;
@@ -169,8 +220,8 @@ export function initGraph() {
       let dx = b.x - a.x;
       let dy = b.y - a.y;
       const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
-      const ideal = a.r + b.r + 42 + e.w * 18;
-      const f = (d - ideal) * sim.a * (0.45 + e.w * 0.55);
+      const ideal = sim.ideal + a.r + b.r + e.w * 16;
+      const f = (d - ideal) * sim.link * (0.45 + e.w * 0.55);
       const ux = dx / d;
       const uy = dy / d;
       a.fx += ux * f;
@@ -183,15 +234,15 @@ export function initGraph() {
       n.vx = (n.vx + n.fx) * sim.damp;
       n.vy = (n.vy + n.fy) * sim.damp;
       const speed = Math.hypot(n.vx, n.vy);
-      const limit = ticks < 160 ? 14 : 8;
+      const limit = ticks < 160 ? 12 : 6;
       const s = speed > limit ? limit / speed : 1;
       n.x += n.vx * s;
       n.y += n.vy * s;
-      // 软边界：贴边时施加反向力，避免堆在某一侧
-      if (n.x < pad + n.r) n.vx += (pad + n.r - n.x) * 0.04;
-      if (n.x > W - pad - n.r) n.vx -= (n.x - (W - pad - n.r)) * 0.04;
-      if (n.y < pad + n.r) n.vy += (pad + n.r - n.y) * 0.04;
-      if (n.y > H - pad - n.r) n.vy -= (n.y - (H - pad - n.r)) * 0.04;
+      // 软边界：贴边时施加反向力，避免标签超出画布
+      if (n.x < pad + n.r) n.vx += (pad + n.r - n.x) * 0.05;
+      if (n.x > W - pad - n.r) n.vx -= (n.x - (W - pad - n.r)) * 0.05;
+      if (n.y < pad + n.r) n.vy += (pad + n.r - n.y) * 0.05;
+      if (n.y > H - pad - n.r) n.vy -= (n.y - (H - pad - n.r)) * 0.05;
       n.x = Math.max(pad, Math.min(W - pad, n.x));
       n.y = Math.max(pad, Math.min(H - pad, n.y));
     });
