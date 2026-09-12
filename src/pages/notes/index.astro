@@ -106,56 +106,6 @@ if (category) {
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 16px;
   }
-  #notes-view.list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    perspective: none;
-    transform-style: flat;
-  }
-  /* 列表项：一行一个，横向信息带 */
-  #notes-view.list .list-item {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
-    border: 1px solid var(--border);
-    border-left: 3px solid transparent;
-    border-radius: 0 12px 12px 0;
-    background: var(--surface);
-    transition: background 0.15s, border-color 0.15s;
-  }
-  #notes-view.list .list-item:hover {
-    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
-    border-left-color: var(--accent);
-  }
-  #notes-view.list .list-item a {
-    color: var(--text);
-    font-size: 15px;
-    font-weight: 600;
-    text-decoration: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  #notes-view.list .list-item a:hover { color: var(--accent); }
-  #notes-view.list .li-meta {
-    color: var(--muted);
-    font-size: 12px;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  #notes-view.list .li-mat {
-    font-size: 11px;
-    flex: none;
-  }
-  @media (max-width: 640px) {
-    #notes-view.list .list-item { grid-template-columns: 1fr auto; gap: 10px; }
-    #notes-view.list .li-meta { display: none; }
-  }
 </style>
 
 <script>

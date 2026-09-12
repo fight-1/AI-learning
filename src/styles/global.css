@@ -1115,6 +1115,55 @@ html.custom-cursor * {
 .stage-card h4 { margin: 0 0 6px; font-size: 15px; }
 .stage-card .chip { font-size: 11px; opacity: .8; }
 
+/* 笔记列表视图：列表项由 JS 动态 innerHTML 注入，不带 Astro 作用域类，
+   故此处必须用全局样式（不能写在 notes/index.astro 的 <style> 作用域内） */
+#notes-view.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  perspective: none;
+  transform-style: flat;
+}
+#notes-view.list .list-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  border-radius: 0 12px 12px 0;
+  background: var(--surface);
+  transition: background 0.15s, border-color 0.15s;
+}
+#notes-view.list .list-item:hover {
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  border-left-color: var(--accent);
+}
+#notes-view.list .list-item a {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#notes-view.list .list-item a:hover { color: var(--accent); }
+#notes-view.list .li-meta {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#notes-view.list .li-mat { font-size: 11px; flex: none; }
+@media (max-width: 640px) {
+  #notes-view.list .list-item { grid-template-columns: 1fr auto; gap: 10px; }
+  #notes-view.list .li-meta { display: none; }
+}
+
 /* —— 跃迁阅读 + 休眠舱 + 能量条（规格书文档1 §三） —— */
 .warp-clone {
   position: fixed;
