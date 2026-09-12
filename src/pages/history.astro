@@ -1,0 +1,86 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="最近浏览 · fight-1 的 AI 学习笔记" description="你最近读过的文章（仅存本机浏览器）" noindex>
+  <div class="page-head">
+    <h1>最近浏览</h1>
+  </div>
+  <p class="page-sub">按最近访问排序，最多保留 30 条。记录只存在你自己的浏览器里，不会上传。</p>
+
+  <div id="hist-box" class="hist-list"></div>
+  <div id="hist-empty" class="empty-box" hidden>
+    <div class="emoji">🕘</div>
+    <p>还没有浏览记录。打开任意一篇文章后，这里就会出现足迹。</p>
+  </div>
+  <button id="hist-clear" class="more-btn" type="button" hidden>清空浏览记录</button>
+</BaseLayout>
+
+<style>
+  .hist-list { display: flex; flex-direction: column; gap: 8px; }
+  .hist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .hist-item:hover { border-color: var(--accent); background: var(--surface-2); text-decoration: none; }
+  .hist-title { color: var(--text); font-size: 15px; }
+  .hist-item:hover .hist-title { color: var(--accent); }
+  .hist-time { margin-left: auto; flex: none; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  #hist-clear { margin-top: 16px; }
+</style>
+
+<script>
+  import { getVisited, clearVisited } from '../scripts/history.js';
+  (function () {
+    const box = document.getElementById('hist-box');
+    const empty = document.getElementById('hist-empty');
+    const clear = document.getElementById('hist-clear');
+
+    function fmt(ts) {
+      const d = new Date(ts);
+      const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (diff < 60) return '刚刚';
+      if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+      if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+      if (diff < 86400 * 7) return Math.floor(diff / 86400) + ' 天前';
+      return d.toISOString().slice(0, 10);
+    }
+
+    function render() {
+      if (!box) return;
+      const list = getVisited();
+      box.innerHTML = '';
+      if (!list.length) {
+        if (empty) empty.hidden = false;
+        if (clear) clear.hidden = true;
+        return;
+      }
+      if (empty) empty.hidden = true;
+      if (clear) clear.hidden = false;
+      list.forEach((v) => {
+        const a = document.createElement('a');
+        a.className = 'hist-item';
+        a.href = v.url || '/notes/' + v.id + '/';
+        const t = document.createElement('span');
+        t.className = 'hist-title';
+        t.textContent = v.title || v.id;
+        const s = document.createElement('span');
+        s.className = 'hist-time';
+        s.textContent = fmt(v.ts);
+        a.appendChild(t);
+        a.appendChild(s);
+        box.appendChild(a);
+      });
+    }
+
+    if (clear) clear.addEventListener('click', () => { clearVisited(); render(); });
+    render();
+  })();
+</script>

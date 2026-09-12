@@ -308,8 +308,15 @@ const breadcrumbLd = {
 <script>
   import { initMermaid } from '../../scripts/mermaid-lazy.js';
   import { initClippings } from '../../scripts/clippings.js';
+  import { markVisited } from '../../scripts/history.js';
   initMermaid();
   initClippings();
+  // 记录阅读足迹（供「最近浏览」与「系列已读进度」使用）
+  markVisited({
+    id: location.pathname.replace(/^\/notes\//, '').replace(/\/$/, ''),
+    title: (document.querySelector('h1') || {}).textContent?.trim() || document.title,
+    url: location.pathname,
+  });
 
   // 通讯频道：本地持久化 + 嵌套回复（树形）
   (function () {

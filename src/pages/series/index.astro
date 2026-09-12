@@ -24,9 +24,13 @@ const seriesList = [...seriesMap.entries()].map(([name, items]) => ({ name, item
       {seriesList.map((s) => (
         <section class="ser-card" data-reveal>
           <h2 class="ser-name">{s.name}<span class="ser-count">{s.items.length} 篇</span></h2>
+          <div class="ser-progress" data-series-progress>
+            <div class="ser-bar"><div class="ser-bar-fill"></div></div>
+            <span class="ser-prog-text">0 / {s.items.length} 已读</span>
+          </div>
           <ol class="ser-items">
             {s.items.map((n, i) => (
-              <li>
+              <li data-note-id={n.id}>
                 <span class="ser-idx">{i + 1}</span>
                 <a class="ser-link" href={`/notes/${n.id}`} data-astro-prefetch>{n.data.title}</a>
                 <span class="ser-meta">{formatDate(n.data.date)}{n.data.maturity === 'polished' && ' · 💎'}{n.data.maturity === 'draft' && ' · 🌱'}</span>
@@ -56,6 +60,11 @@ const seriesList = [...seriesMap.entries()].map(([name, items]) => ({ name, item
     color: var(--accent);
   }
   .ser-count { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .ser-progress { display: flex; align-items: center; gap: 10px; margin: -6px 0 12px; }
+  .ser-bar { flex: 1; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .ser-bar-fill { height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width 0.3s ease; }
+  .ser-prog-text { flex: none; font-size: 12px; color: var(--muted); }
+  .ser-items li.is-read .ser-link::after { content: ' ✓'; color: var(--accent); font-size: 12px; }
   .ser-items { list-style: none; margin: 0; padding: 0; counter-reset: none; display: flex; flex-direction: column; gap: 10px; }
   .ser-items li {
     display: flex;
@@ -83,3 +92,24 @@ const seriesList = [...seriesMap.entries()].map(([name, items]) => ({ name, item
   .ser-link:hover { color: var(--accent); text-decoration: none; }
   .ser-meta { color: var(--muted); font-size: 12px; margin-left: auto; white-space: nowrap; }
 </style>
+
+<script>
+  import { visitedIds } from '../../scripts/history.js';
+  // 系列已读进度：读 localStorage 的阅读足迹，渲染进度条并给已读项打 ✓
+  (function () {
+    const seen = visitedIds();
+    document.querySelectorAll('[data-series-progress]').forEach((box) => {
+      const card = box.closest('.ser-card');
+      if (!card) return;
+      const items = Array.from(card.querySelectorAll('[data-note-id]'));
+      const total = items.length;
+      const read = items.filter((el) => seen.has(el.dataset.noteId)).length;
+      const pct = total ? Math.round((read / total) * 100) : 0;
+      const fill = box.querySelector('.ser-bar-fill');
+      const text = box.querySelector('.ser-prog-text');
+      if (fill) fill.style.width = pct + '%';
+      if (text) text.textContent = `${read} / ${total} 已读`;
+      items.forEach((el) => el.classList.toggle('is-read', seen.has(el.dataset.noteId)));
+    });
+  })();
+</script>

@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getNotes, formatDate } from '../lib/notes';
+
+const notes = await getNotes();
+const items = notes
+  .map((n) => {
+    const d = n.data.date;
+    const u = n.data.updated || null;
+    const isUpdate = !!u && u.valueOf() > d.valueOf();
+    return {
+      id: n.id,
+      title: n.data.title,
+      category: n.data.category,
+      when: isUpdate ? u! : d,
+      isUpdate,
+    };
+  })
+  .sort((a, b) => b.when.valueOf() - a.when.valueOf());
+---
+
+<BaseLayout title="更新日志 · fight-1 的 AI 学习笔记" description="文章的新增与修订记录，按最后变动时间倒序">
+  <div class="page-head">
+    <h1>更新日志</h1>
+    <p class="count">共 {items.length} 条</p>
+  </div>
+  <p class="page-sub">按最后变动时间倒序：新增与修订一目了然。</p>
+
+  <ol class="chg-list">
+    {items.map((it) => (
+      <li class="chg-item">
+        <span class="chg-badge" data-kind={it.isUpdate ? 'update' : 'new'}>{it.isUpdate ? '更新' : '新增'}</span>
+        <a class="chg-link" href={`/notes/${it.id}`} data-astro-prefetch>{it.title}</a>
+        <span class="chg-meta">{it.category} · {formatDate(it.when)}</span>
+      </li>
+    ))}
+  </ol>
+</BaseLayout>
+
+<style>
+  .chg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .chg-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    border-left: 3px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .chg-item:hover { background: var(--surface-2); border-left-color: var(--accent); }
+  .chg-badge {
+    flex: none;
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface-2);
+  }
+  .chg-badge[data-kind='new'] { color: var(--accent); border-color: var(--accent); }
+  .chg-link { color: var(--text); font-size: 15px; text-decoration: none; }
+  .chg-link:hover { color: var(--accent); text-decoration: none; }
+  .chg-meta { margin-left: auto; flex: none; color: var(--muted); font-size: 12px; white-space: nowrap; }
+</style>
