@@ -1,47 +1,112 @@
 ---
 import SkinSwitcher from './SkinSwitcher.astro';
 
-const links = [
+const core = [
   { href: '/', label: '首页' },
   { href: '/notes', label: '笔记' },
   { href: '/archive', label: '归档' },
+  { href: '/series', label: '系列' },
+];
+const explore = [
   { href: '/categories', label: '分类' },
   { href: '/tags', label: '标签' },
-  { href: '/series', label: '系列' },
   { href: '/graph', label: '图谱' },
   { href: '/favorites', label: '收藏' },
   { href: '/clippings', label: '摘录' },
+];
+const tools = [
   { href: '/console', label: '控制台' },
   { href: '/drafts', label: '草稿' },
   { href: '/about', label: '关于' },
 ];
 const path = Astro.url.pathname;
+const isActive = (href) => path === href || (href !== '/' && path.startsWith(href));
 ---
 
 <header class="nav">
   <div class="nav-inner">
     <a href="/" class="logo">fight<span class="logo-num">-1</span></a>
 
-    <nav class="nav-links">
-      {links.map((l) => (
+    <button class="nav-burger" data-nav-burger aria-label="打开菜单" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav-desk" aria-label="主导航">
+      {core.map((l) => (
         <a
           href={l.href}
-          class:list={['nav-link', { active: path === l.href || (l.href !== '/' && path.startsWith(l.href)) }]}
-          aria-current={path === l.href ? 'page' : undefined}
-        >
-          {l.label}
-        </a>
+          class:list={['nav-link', { active: isActive(l.href) }]}
+          aria-current={isActive(l.href) ? 'page' : undefined}
+          data-nav-item={l.href}
+        >{l.label}</a>
       ))}
+      <div class="nav-drop">
+        <button class="nav-link nav-drop-btn" data-drop="explore" aria-haspopup="true" aria-expanded="false">
+          探索 <span class="caret">▾</span>
+        </button>
+        <div class="nav-menu" data-menu="explore" role="menu">
+          {explore.map((l) => (
+            <a href={l.href} class:list={['nav-menu-item', { active: isActive(l.href) }]} role="menuitem" data-nav-item={l.href}>{l.label}</a>
+          ))}
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button class="nav-link nav-drop-btn" data-drop="tools" aria-haspopup="true" aria-expanded="false">
+          工具 <span class="caret">▾</span>
+        </button>
+        <div class="nav-menu" data-menu="tools" role="menu">
+          {tools.map((l) => (
+            <a href={l.href} class:list={['nav-menu-item', { active: isActive(l.href) }]} role="menuitem" data-nav-item={l.href}>{l.label}</a>
+          ))}
+        </div>
+      </div>
     </nav>
 
     <div class="nav-controls">
-      <button class="radar-trigger" data-radar aria-label="深空雷达搜索">📡 雷达</button>
-      <a href="/search" class="ctrl" aria-label="搜索">搜索</a>
-      <button class="ctrl" data-skin-trigger aria-label="切换皮肤">战甲</button>
-      <button class="ctrl theme-toggle" data-theme-toggle aria-label="切换亮暗">☾</button>
+      <a href="/search" class="ctrl ctrl-icon" aria-label="搜索">🔍</a>
+      <button class="ctrl ctrl-icon" data-settings-toggle aria-label="设置" aria-expanded="false">⚙️</button>
+    </div>
+
+    <div class="settings-pop" data-settings-pop hidden>
+      <div class="settings-row">
+        <button class="ctrl theme-toggle" data-theme-toggle aria-label="切换亮暗">☾</button>
+        <button class="radar-trigger" data-radar>📡 雷达</button>
+      </div>
       <SkinSwitcher />
     </div>
   </div>
+
+  <div class="nav-drawer" data-nav-drawer aria-label="移动端菜单">
+    <div class="drawer-scroll">
+      <p class="drawer-title">核心</p>
+      {core.map((l) => (
+        <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href}>{l.label}</a>
+      ))}
+      <p class="drawer-title">探索</p>
+      {explore.map((l) => (
+        <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href}>{l.label}</a>
+      ))}
+      <p class="drawer-title">工具</p>
+      {tools.map((l) => (
+        <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href}>{l.label}</a>
+      ))}
+      <p class="drawer-title">设置</p>
+      <div class="drawer-settings">
+        <button class="ctrl theme-toggle" data-theme-toggle>☾ 主题</button>
+        <button class="radar-trigger" data-radar>📡 雷达</button>
+        <SkinSwitcher />
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-scrim" data-nav-scrim hidden></div>
+
+  <nav class="nav-tabbar" aria-label="快捷栏">
+    <a href="/" class="tab-item" data-nav-item="/">🏠<span>首页</span></a>
+    <a href="/notes" class="tab-item" data-nav-item="/notes">📓<span>笔记</span></a>
+    <a href="/search" class="tab-item" data-nav-item="/search">🔍<span>搜索</span></a>
+    <button class="tab-item" data-settings-toggle>⚙️<span>设置</span></button>
+  </nav>
 </header>
 
 <style>
@@ -59,7 +124,7 @@ const path = Astro.url.pathname;
     max-width: 72rem;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     padding: 12px 16px;
   }
   .logo {
@@ -67,16 +132,37 @@ const path = Astro.url.pathname;
     font-weight: 600;
     color: var(--text);
     letter-spacing: 0.5px;
+    flex: none;
   }
-  .logo:hover {
-    text-decoration: none;
-  }
-  .logo-num {
-    color: var(--accent);
-  }
-  .nav-links {
-    display: flex;
+  .logo:hover { text-decoration: none; }
+  .logo-num { color: var(--accent); }
+
+  /* 汉堡（仅移动端显示） */
+  .nav-burger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
     gap: 4px;
+    width: 38px;
+    height: 38px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    cursor: pointer;
+  }
+  .nav-burger span {
+    display: block;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--text);
+  }
+
+  /* 桌面导航 */
+  .nav-desk {
+    display: flex;
+    align-items: center;
+    gap: 2px;
     margin-left: 8px;
   }
   .nav-link {
@@ -84,15 +170,51 @@ const path = Astro.url.pathname;
     padding: 6px 10px;
     border-radius: 8px;
     font-size: 14px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
   }
   .nav-link:hover {
     color: var(--text);
     text-decoration: none;
     background: var(--surface-2);
   }
-  .nav-link.active {
-    color: var(--accent);
+  .nav-link.active { color: var(--accent); }
+  .caret { font-size: 9px; opacity: 0.6; margin-left: 1px; }
+
+  .nav-drop { position: relative; }
+  .nav-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 148px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    z-index: 50;
   }
+  .nav-drop:hover .nav-menu,
+  .nav-drop:focus-within .nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .nav-menu-item {
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 14px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .nav-menu-item:hover { background: var(--surface-2); color: var(--accent); }
+  .nav-menu-item.active { color: var(--accent); }
+
+  /* 控件区 */
   .nav-controls {
     margin-left: auto;
     display: flex;
@@ -103,8 +225,8 @@ const path = Astro.url.pathname;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 36px;
-    height: 36px;
+    min-width: 38px;
+    height: 38px;
     padding: 0 10px;
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -115,16 +237,206 @@ const path = Astro.url.pathname;
     font-family: inherit;
     transition: border-color 0.15s ease, color 0.15s ease;
   }
-  .ctrl:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+  .ctrl:hover { border-color: var(--accent); color: var(--accent); }
+  .ctrl-icon { font-size: 16px; }
+  .theme-toggle { font-size: 16px; }
+
+  /* 设置弹层（桌面右上 / 移动端底部 sheet） */
+  .settings-pop {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 16px;
+    width: 272px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    z-index: 60;
   }
-  .theme-toggle {
-    font-size: 16px;
+  .settings-pop[hidden] { display: none; }
+  .settings-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
   }
-  @media (max-width: 640px) {
-    .nav-links {
-      display: none;
+  .settings-row .ctrl,
+  .settings-row .radar-trigger { flex: 1; }
+
+  /* 移动端抽屉 + 遮罩 + 底部栏（默认隐藏） */
+  .nav-drawer { display: none; }
+  .nav-scrim { display: none; }
+  .nav-tabbar { display: none; }
+
+  /* SkinSwitcher 面板在弹层/抽屉内强制铺满显示（去掉其自带 absolute 定位与 hidden） */
+  .settings-pop :global(.skin-panel),
+  .drawer-settings :global(.skin-panel) {
+    display: block !important;
+    position: static;
+    width: 100%;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin-top: 10px;
+    background: transparent;
+  }
+  .settings-pop :global(.skin-panel)[hidden],
+  .drawer-settings :global(.skin-panel)[hidden] { display: block !important; }
+
+  @media (max-width: 860px) {
+    .nav-desk { display: none; }
+    .nav-burger {
+      display: flex;
+      margin-left: auto;
     }
+    .nav-controls { display: none; }
+
+    .settings-pop {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: auto;
+      width: 100%;
+      max-height: 78vh;
+      overflow: auto;
+      border-radius: 16px 16px 0 0;
+      padding: 16px;
+      animation: sheetUp 0.22s ease;
+    }
+    @keyframes sheetUp {
+      from { transform: translateY(20px); opacity: 0.6; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .nav-drawer {
+      display: block;
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100dvh;
+      width: 84%;
+      max-width: 320px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+      z-index: 70;
+      overflow: hidden;
+    }
+    .nav-drawer.open { transform: translateX(0); }
+    .drawer-scroll {
+      height: 100%;
+      overflow: auto;
+      padding: 20px 16px 80px;
+    }
+    .drawer-title {
+      margin: 16px 0 6px;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .drawer-title:first-child { margin-top: 0; }
+    .drawer-item {
+      display: block;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 15px;
+      text-decoration: none;
+    }
+    .drawer-item:hover { background: var(--surface-2); }
+    .drawer-item.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+    .drawer-settings { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+    .drawer-settings .ctrl,
+    .drawer-settings .radar-trigger { flex: 1 1 auto; }
+
+    .nav-scrim {
+      display: block;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 65;
+    }
+    .nav-scrim[hidden] { display: none; }
+
+    .nav-tabbar {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: color-mix(in srgb, var(--bg) 92%, transparent);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      z-index: 60;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+      border: none;
+      background: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 6px 0;
+    }
+    .tab-item span { font-size: 11px; }
+    .tab-item:hover { color: var(--text); text-decoration: none; }
+    .tab-item.active { color: var(--accent); }
+
+    :global(body) { padding-bottom: 56px; }
   }
 </style>
+
+<script>
+  const pop = document.querySelector('[data-settings-pop]');
+  const toggles = Array.from(document.querySelectorAll('[data-settings-toggle]'));
+  const burger = document.querySelector('[data-nav-burger]');
+  const drawer = document.querySelector('[data-nav-drawer]');
+  const scrim = document.querySelector('[data-nav-scrim]');
+
+  const closePop = () => {
+    if (pop) pop.hidden = true;
+    toggles.forEach((t) => t.setAttribute('aria-expanded', 'false'));
+  };
+  const openPop = () => {
+    if (pop) pop.hidden = false;
+    toggles.forEach((t) => t.setAttribute('aria-expanded', 'true'));
+  };
+  toggles.forEach((t) =>
+    t.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pop && pop.hidden ? openPop() : closePop();
+    })
+  );
+
+  const openDrawer = () => {
+    if (drawer) drawer.classList.add('open');
+    if (scrim) scrim.hidden = false;
+    if (burger) burger.setAttribute('aria-expanded', 'true');
+  };
+  const closeDrawer = () => {
+    if (drawer) drawer.classList.remove('open');
+    if (scrim) scrim.hidden = true;
+    if (burger) burger.setAttribute('aria-expanded', 'false');
+  };
+  if (burger) burger.addEventListener('click', (e) => { e.stopPropagation(); drawer.classList.contains('open') ? closeDrawer() : openDrawer(); });
+  if (scrim) scrim.addEventListener('click', closeDrawer);
+
+  document.addEventListener('click', (e) => {
+    if (pop && !pop.contains(e.target) && !toggles.some((t) => t.contains(e.target))) closePop();
+    if (drawer && !drawer.contains(e.target) && burger && !burger.contains(e.target)) closeDrawer();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closePop(); closeDrawer(); }
+  });
+</script>
