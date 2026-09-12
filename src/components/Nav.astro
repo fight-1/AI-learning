@@ -18,18 +18,23 @@ const links = [
   { href: '/about', label: '关于' },
 ];
 const path = Astro.url.pathname;
+const isActive = (href) => path === href || (href !== '/' && path.startsWith(href));
 ---
 
 <header class="nav">
   <div class="nav-inner">
     <a href="/" class="logo">fight<span class="logo-num">-1</span></a>
 
+    <button class="nav-burger" data-nav-burger aria-label="打开菜单" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+
     <nav class="nav-links">
       {links.map((l) => (
         <a
           href={l.href}
-          class:list={['nav-link', { active: path === l.href || (l.href !== '/' && path.startsWith(l.href)) }]}
-          aria-current={path === l.href ? 'page' : undefined}
+          class:list={['nav-link', { active: isActive(l.href) }]}
+          aria-current={isActive(l.href) ? 'page' : undefined}
         >
           {l.label}
         </a>
@@ -44,6 +49,33 @@ const path = Astro.url.pathname;
       <SkinSwitcher />
     </div>
   </div>
+
+  <!-- 移动端抽屉：平铺导航在小屏放不下，收进侧滑面板 -->
+  <div class="nav-drawer" data-nav-drawer aria-label="移动端菜单">
+    <div class="drawer-scroll">
+      {links.map((l) => (
+        <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]}>{l.label}</a>
+      ))}
+    </div>
+  </div>
+  <div class="nav-scrim" data-nav-scrim hidden></div>
+
+  <!-- 移动端设置：主题 / 雷达 / 战甲（点战甲展开皮肤面板，小屏自动变底部 sheet） -->
+  <div class="m-set" data-m-set hidden>
+    <div class="m-set-row">
+      <button class="ctrl theme-toggle" data-theme-toggle>☾ 主题</button>
+      <button class="radar-trigger" data-radar>📡 雷达</button>
+      <button class="ctrl" data-m-skin>🎨 战甲</button>
+    </div>
+    <p class="m-set-hint">点「战甲」可换皮肤 / 背景动态 / 配色</p>
+  </div>
+
+  <nav class="nav-tabbar" aria-label="快捷栏">
+    <a href="/" class="tab-item">🏠<span>首页</span></a>
+    <a href="/notes" class="tab-item">📓<span>笔记</span></a>
+    <a href="/search" class="tab-item">🔍<span>搜索</span></a>
+    <button class="tab-item" data-m-set-toggle>⚙️<span>设置</span></button>
+  </nav>
 </header>
 
 <style>
@@ -124,9 +156,209 @@ const path = Astro.url.pathname;
   .theme-toggle {
     font-size: 16px;
   }
-  @media (max-width: 640px) {
-    .nav-links {
-      display: none;
+
+  /* —— 以下为移动端 / 平板专属（默认隐藏，≤860px 才启用） —— */
+  .nav-burger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 38px;
+    height: 38px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    cursor: pointer;
+  }
+  .nav-burger span {
+    display: block;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--text);
+  }
+  .nav-drawer { display: none; }
+  .nav-scrim { display: none; }
+  .m-set { display: none; }
+  .nav-tabbar { display: none; }
+
+  @media (max-width: 860px) {
+    .nav-links { display: none; }
+    .nav-burger { display: flex; margin-left: auto; }
+    /* 顶部控件在小屏收起，改由底部栏 + 设置面板提供；
+       但 SkinSwitcher 面板必须保留在 DOM 里（下面改成底部 sheet 复用它） */
+    .nav-controls > .radar-trigger,
+    .nav-controls > a.ctrl,
+    .nav-controls > button { display: none; }
+    .nav-controls { margin-left: 0; }
+
+    .nav-drawer {
+      display: block;
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100dvh;
+      width: 84%;
+      max-width: 320px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+      z-index: 70;
+      overflow: hidden;
     }
+    .nav-drawer.open { transform: translateX(0); }
+    .drawer-scroll { height: 100%; overflow: auto; padding: 20px 16px 80px; }
+    .drawer-item {
+      display: block;
+      padding: 11px 12px;
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 15px;
+      text-decoration: none;
+    }
+    .drawer-item:hover { background: var(--surface-2); }
+    .drawer-item.active {
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+    }
+
+    .nav-scrim {
+      display: block;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 65;
+    }
+    .nav-scrim[hidden] { display: none; }
+
+    .nav-tabbar {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: color-mix(in srgb, var(--bg) 92%, transparent);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      z-index: 60;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+      border: none;
+      background: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 6px 0;
+    }
+    .tab-item span { font-size: 11px; }
+    .tab-item:hover { color: var(--text); text-decoration: none; }
+
+    .m-set {
+      display: block;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      padding: 16px;
+      z-index: 75;
+      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.3);
+    }
+    .m-set[hidden] { display: none; }
+    .m-set-row { display: flex; gap: 8px; }
+    .m-set-row .ctrl,
+    .m-set-row .radar-trigger { flex: 1; }
+    .m-set-hint { margin: 10px 0 0; font-size: 11px; color: var(--muted); }
+
+    /* 战甲面板在小屏复用为底部 sheet（它挂在 .nav-controls 内，容器保留即可定位） */
+    :global(.skin-panel) {
+      position: fixed !important;
+      top: auto !important;
+      bottom: 56px;
+      left: 0;
+      right: 0;
+      width: 100% !important;
+      max-height: 68vh;
+      overflow: auto;
+      border-radius: 16px 16px 0 0;
+      z-index: 80;
+    }
+
+    :global(body) { padding-bottom: 56px; }
   }
 </style>
+
+<script>
+  const burger = document.querySelector('[data-nav-burger]');
+  const drawer = document.querySelector('[data-nav-drawer]');
+  const scrim = document.querySelector('[data-nav-scrim]');
+  const mSet = document.querySelector('[data-m-set]');
+  const mSetToggles = Array.from(document.querySelectorAll('[data-m-set-toggle]'));
+  const panel = document.querySelector('[data-skin-panel]');
+  const mSkin = document.querySelector('[data-m-skin]');
+
+  const openDrawer = () => {
+    if (drawer) drawer.classList.add('open');
+    if (scrim) scrim.hidden = false;
+    if (burger) burger.setAttribute('aria-expanded', 'true');
+  };
+  const closeDrawer = () => {
+    if (drawer) drawer.classList.remove('open');
+    if (scrim) scrim.hidden = true;
+    if (burger) burger.setAttribute('aria-expanded', 'false');
+  };
+  if (burger && drawer) {
+    burger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      drawer.classList.contains('open') ? closeDrawer() : openDrawer();
+    });
+  }
+  if (scrim) scrim.addEventListener('click', closeDrawer);
+
+  const closeSet = () => {
+    if (mSet) mSet.hidden = true;
+    mSetToggles.forEach((t) => t.setAttribute('aria-expanded', 'false'));
+  };
+  mSetToggles.forEach((t) =>
+    t.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!mSet) return;
+      mSet.hidden = !mSet.hidden;
+      t.setAttribute('aria-expanded', String(!mSet.hidden));
+    })
+  );
+
+  // 移动端「战甲」：BaseLayout 只绑定了第一个 [data-skin-trigger]（顶栏那个，小屏已隐藏），
+  // 这里单独切换面板并阻止冒泡，避免被 BaseLayout 的外部点击逻辑立刻关掉。
+  if (mSkin && panel) {
+    mSkin.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.hidden = !panel.hidden;
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (drawer && !drawer.contains(e.target) && burger && !burger.contains(e.target)) closeDrawer();
+    if (mSet && !mSet.contains(e.target) && !mSetToggles.some((t) => t.contains(e.target))) closeSet();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeDrawer();
+      closeSet();
+      if (panel) panel.hidden = true;
+    }
+  });
+</script>
