@@ -1,136 +1,49 @@
 ---
 import SkinSwitcher from './SkinSwitcher.astro';
 
-const core = [
+const links = [
   { href: '/', label: '首页' },
   { href: '/notes', label: '笔记' },
   { href: '/archive', label: '归档' },
-  { href: '/series', label: '系列' },
-];
-const explore = [
   { href: '/categories', label: '分类' },
   { href: '/tags', label: '标签' },
+  { href: '/series', label: '系列' },
   { href: '/graph', label: '图谱' },
   { href: '/favorites', label: '收藏' },
   { href: '/clippings', label: '摘录' },
   { href: '/history', label: '浏览' },
-];
-const tools = [
   { href: '/console', label: '控制台' },
   { href: '/drafts', label: '草稿' },
   { href: '/changelog', label: '更新' },
   { href: '/about', label: '关于' },
 ];
 const path = Astro.url.pathname;
-const isActive = (href) => path === href || (href !== '/' && path.startsWith(href));
 ---
 
 <header class="nav">
   <div class="nav-inner">
     <a href="/" class="logo">fight<span class="logo-num">-1</span></a>
 
-    <button class="nav-burger" data-nav-burger aria-label="打开菜单" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
-
-    <nav class="nav-desk" aria-label="主导航">
-      <div class="nav-core" data-nav-slot="core">
-        {core.map((l) => (
-          <a
-            href={l.href}
-            class:list={['nav-link', { active: isActive(l.href) }]}
-            aria-current={isActive(l.href) ? 'page' : undefined}
-            data-nav-item={l.href}
-            data-nav-group="core"
-            draggable="false"
-          >{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
-        ))}
-      </div>
-      <div class="nav-drop">
-        <button class="nav-link nav-drop-btn" data-drop="explore" aria-haspopup="true" aria-expanded="false">
-          探索 <span class="caret">▾</span>
-        </button>
-        <div class="nav-menu" data-nav-slot="explore" role="menu">
-          {explore.map((l) => (
-            <a href={l.href} class:list={['nav-menu-item', { active: isActive(l.href) }]} role="menuitem" data-nav-item={l.href} data-nav-group="explore" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
-          ))}
-        </div>
-      </div>
-      <div class="nav-drop">
-        <button class="nav-link nav-drop-btn" data-drop="tools" aria-haspopup="true" aria-expanded="false">
-          工具 <span class="caret">▾</span>
-        </button>
-        <div class="nav-menu" data-nav-slot="tools" role="menu">
-          {tools.map((l) => (
-            <a href={l.href} class:list={['nav-menu-item', { active: isActive(l.href) }]} role="menuitem" data-nav-item={l.href} data-nav-group="tools" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
-          ))}
-          <button type="button" class="nav-menu-item" data-nav-item="radar" data-nav-group="tools" data-radar draggable="false">📡 雷达<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label="前移雷达">◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label="后移雷达">▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label="换组雷达">⇄</span><span class="nav-hide" data-hide="radar" role="button" tabindex="0" aria-label="隐藏雷达">✕</span></span></button>
-        </div>
-      </div>
+    <nav class="nav-links">
+      {links.map((l) => (
+        <a
+          href={l.href}
+          class:list={['nav-link', { active: path === l.href || (l.href !== '/' && path.startsWith(l.href)) }]}
+          aria-current={path === l.href ? 'page' : undefined}
+        >
+          {l.label}
+        </a>
+      ))}
     </nav>
 
     <div class="nav-controls">
-      <a href="/search" class="ctrl ctrl-icon" aria-label="搜索">🔍</a>
-      <button class="ctrl ctrl-icon" data-settings-toggle aria-label="设置" aria-expanded="false">⚙️</button>
-    </div>
-
-    <div class="settings-pop" data-settings-pop hidden>
-      <div class="settings-row">
-        <button class="ctrl theme-toggle" data-theme-toggle aria-label="切换亮暗">☾</button>
-        <button class="radar-trigger" data-radar>📡 雷达</button>
-      </div>
-
-      <div class="settings-edit">
-        <button class="ctrl" data-nav-edit-toggle>✎ 自定义菜单</button>
-        <button class="ctrl" data-nav-reset hidden>↺ 重置默认</button>
-      </div>
-      <p class="settings-hint" data-nav-hint hidden>开启后：拖拽排序，点 ✕ 隐藏（改动自动保存）</p>
-      <div class="hidden-chips" data-hidden-chips></div>
-
+      <button class="radar-trigger" data-radar aria-label="深空雷达搜索">📡 雷达</button>
+      <a href="/search" class="ctrl" aria-label="搜索">搜索</a>
+      <button class="ctrl" data-skin-trigger aria-label="切换皮肤">战甲</button>
+      <button class="ctrl theme-toggle" data-theme-toggle aria-label="切换亮暗">☾</button>
       <SkinSwitcher />
     </div>
   </div>
-
-  <div class="nav-drawer" data-nav-drawer aria-label="移动端菜单">
-    <div class="drawer-scroll">
-      <div class="drawer-group" data-nav-slot="core">
-        <p class="drawer-title">核心</p>
-        {core.map((l) => (
-          <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href} data-nav-group="core" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
-        ))}
-      </div>
-      <div class="drawer-group" data-nav-slot="explore">
-        <p class="drawer-title">探索</p>
-        {explore.map((l) => (
-          <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href} data-nav-group="explore" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
-        ))}
-      </div>
-      <div class="drawer-group" data-nav-slot="tools">
-        <p class="drawer-title">工具</p>
-        {tools.map((l) => (
-          <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href} data-nav-group="tools" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
-          ))}
-          <button type="button" class="drawer-item" data-nav-item="radar" data-nav-group="tools" data-radar draggable="false">📡 雷达<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label="前移雷达">◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label="后移雷达">▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label="换组雷达">⇄</span><span class="nav-hide" data-hide="radar" role="button" tabindex="0" aria-label="隐藏雷达">✕</span></span></button>
-      </div>
-      <p class="drawer-title">设置</p>
-      <div class="drawer-settings">
-        <button class="ctrl theme-toggle" data-theme-toggle>☾ 主题</button>
-        <button class="radar-trigger" data-radar>📡 雷达</button>
-        <button class="ctrl" data-nav-edit-toggle>✎ 自定义菜单</button>
-        <button class="ctrl" data-nav-reset hidden>↺ 重置默认</button>
-        <SkinSwitcher />
-      </div>
-    </div>
-  </div>
-
-  <div class="nav-scrim" data-nav-scrim hidden></div>
-
-  <nav class="nav-tabbar" aria-label="快捷栏">
-    <a href="/" class="tab-item">🏠<span>首页</span></a>
-    <a href="/notes" class="tab-item">📓<span>笔记</span></a>
-    <a href="/search" class="tab-item">🔍<span>搜索</span></a>
-    <button class="tab-item" data-settings-toggle>⚙️<span>设置</span></button>
-  </nav>
 </header>
 
 <style>
@@ -148,7 +61,7 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
     max-width: 72rem;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     padding: 12px 16px;
   }
   .logo {
@@ -156,107 +69,32 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
     font-weight: 600;
     color: var(--text);
     letter-spacing: 0.5px;
-    flex: none;
   }
-  .logo:hover { text-decoration: none; }
-  .logo-num { color: var(--accent); }
-
-  .nav-burger {
-    display: none;
-    flex-direction: column;
-    justify-content: center;
+  .logo:hover {
+    text-decoration: none;
+  }
+  .logo-num {
+    color: var(--accent);
+  }
+  .nav-links {
+    display: flex;
     gap: 4px;
-    width: 38px;
-    height: 38px;
-    padding: 0 8px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--surface);
-    cursor: pointer;
-  }
-  .nav-burger span {
-    display: block;
-    height: 2px;
-    border-radius: 2px;
-    background: var(--text);
-  }
-
-  .nav-desk {
-    display: flex;
-    align-items: center;
-    gap: 2px;
     margin-left: 8px;
-  }
-  .nav-core {
-    display: flex;
-    align-items: center;
-    gap: 2px;
   }
   .nav-link {
     color: var(--muted);
     padding: 6px 10px;
     border-radius: 8px;
     font-size: 14px;
-    background: none;
-    border: none;
-    font-family: inherit;
-    cursor: pointer;
   }
   .nav-link:hover {
     color: var(--text);
     text-decoration: none;
     background: var(--surface-2);
   }
-  .nav-link.active { color: var(--accent); }
-  .caret { font-size: 9px; opacity: 0.6; margin-left: 1px; }
-
-  .nav-drop { position: relative; }
-  .nav-menu {
-    display: none;
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    min-width: 148px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 6px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-    z-index: 50;
+  .nav-link.active {
+    color: var(--accent);
   }
-  .nav-drop:hover .nav-menu,
-  .nav-drop:focus-within .nav-menu {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .nav-menu-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    color: var(--text);
-    font-size: 14px;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  .nav-menu-item:hover { background: var(--surface-2); color: var(--accent); }
-  .nav-menu-item.active { color: var(--accent); }
-  button.nav-menu-item,
-  button.drawer-item {
-    width: 100%;
-    background: none;
-    border: none;
-    font-family: inherit;
-    font-size: 14px;
-    text-align: left;
-    cursor: pointer;
-    color: var(--text);
-  }
-  button.drawer-item { font-size: 15px; }
-
   .nav-controls {
     margin-left: auto;
     display: flex;
@@ -267,8 +105,8 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 38px;
-    height: 38px;
+    min-width: 36px;
+    height: 36px;
     padding: 0 10px;
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -279,442 +117,16 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
     font-family: inherit;
     transition: border-color 0.15s ease, color 0.15s ease;
   }
-  .ctrl:hover { border-color: var(--accent); color: var(--accent); }
-  .ctrl-icon { font-size: 16px; }
-  .theme-toggle { font-size: 16px; }
-
-  .settings-pop {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 16px;
-    width: 272px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-    z-index: 60;
+  .ctrl:hover {
+    border-color: var(--accent);
+    color: var(--accent);
   }
-  .settings-pop[hidden] { display: none; }
-  .settings-row { display: flex; gap: 8px; margin-bottom: 10px; }
-  .settings-row .ctrl,
-  .settings-row .radar-trigger { flex: 1; }
-
-  /* 菜单自定义（编辑模式） */
-  .settings-edit { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .settings-edit .ctrl { flex: 1 1 auto; font-size: 12px; height: 32px; min-width: 0; }
-  .settings-hint { margin: 0 0 8px; font-size: 11px; color: var(--muted); line-height: 1.5; }
-  .hidden-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .hidden-chips button {
-    padding: 3px 9px;
-    border: 1px dashed var(--border);
-    border-radius: 999px;
-    background: var(--surface-2);
-    color: var(--muted);
-    font-size: 11px;
-    font-family: inherit;
-    cursor: pointer;
+  .theme-toggle {
+    font-size: 16px;
   }
-  .hidden-chips button:hover { color: var(--accent); border-color: var(--accent); }
-
-  .nav-ops { display: none; gap: 4px; margin-left: 6px; flex: none; }
-  .nav-editing .nav-ops { display: inline-flex; }
-  .nav-hide,
-  .nav-move {
-    display: inline-flex;
-    padding: 0 5px;
-    border-radius: 6px;
-    background: var(--surface-2);
-    color: var(--muted);
-    font-size: 11px;
-    line-height: 18px;
-    cursor: pointer;
-  }
-  .nav-move { font-size: 10px; padding: 0 4px; }
-  [data-nav-group].nav-hidden { display: none !important; }
-  .nav-editing [data-nav-group].nav-hidden { display: flex !important; opacity: 0.45; }
-  .nav-editing [data-nav-group] {
-    outline: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
-    outline-offset: 1px;
-  }
-  [data-nav-group].dragging { opacity: 0.35; }
-
-  .nav-drawer { display: none; }
-  .nav-scrim { display: none; }
-  .nav-tabbar { display: none; }
-
-  .settings-pop :global(.skin-panel),
-  .drawer-settings :global(.skin-panel) {
-    display: block !important;
-    position: static;
-    width: 100%;
-    box-shadow: none;
-    border: none;
-    padding: 0;
-    margin-top: 10px;
-    background: transparent;
-  }
-  .settings-pop :global(.skin-panel)[hidden],
-  .drawer-settings :global(.skin-panel)[hidden] { display: block !important; }
-
-  @media (max-width: 860px) {
-    .nav-desk { display: none; }
-    .nav-burger { display: flex; margin-left: auto; }
-    .nav-controls { display: none; }
-
-    .settings-pop {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      top: auto;
-      width: 100%;
-      max-height: 78vh;
-      overflow: auto;
-      border-radius: 16px 16px 0 0;
-      padding: 16px;
-      animation: sheetUp 0.22s ease;
+  @media (max-width: 640px) {
+    .nav-links {
+      display: none;
     }
-    @keyframes sheetUp {
-      from { transform: translateY(20px); opacity: 0.6; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    .nav-drawer {
-      display: block;
-      position: fixed;
-      top: 0;
-      right: 0;
-      height: 100dvh;
-      width: 84%;
-      max-width: 320px;
-      background: var(--surface);
-      border-left: 1px solid var(--border);
-      transform: translateX(100%);
-      transition: transform 0.25s ease;
-      z-index: 70;
-      overflow: hidden;
-    }
-    .nav-drawer.open { transform: translateX(0); }
-    .drawer-scroll { height: 100%; overflow: auto; padding: 20px 16px 80px; }
-    .drawer-title {
-      margin: 16px 0 6px;
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 1px;
-    }
-    .drawer-group .drawer-title:first-child { margin-top: 0; }
-    .drawer-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      color: var(--text);
-      font-size: 15px;
-      text-decoration: none;
-    }
-    .drawer-item:hover { background: var(--surface-2); }
-    .drawer-item.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
-    .drawer-settings { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
-    .drawer-settings .ctrl,
-    .drawer-settings .radar-trigger { flex: 1 1 auto; }
-
-    .nav-scrim {
-      display: block;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.45);
-      z-index: 65;
-    }
-    .nav-scrim[hidden] { display: none; }
-
-    .nav-tabbar {
-      display: flex;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 56px;
-      background: color-mix(in srgb, var(--bg) 92%, transparent);
-      backdrop-filter: blur(12px);
-      border-top: 1px solid var(--border);
-      z-index: 60;
-      justify-content: space-around;
-      align-items: center;
-    }
-    .tab-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      flex: 1;
-      border: none;
-      background: none;
-      color: var(--muted);
-      font-size: 11px;
-      font-family: inherit;
-      cursor: pointer;
-      padding: 6px 0;
-    }
-    .tab-item span { font-size: 11px; }
-    .tab-item:hover { color: var(--text); text-decoration: none; }
-
-    :global(body) { padding-bottom: 56px; }
   }
 </style>
-
-<script>
-  // ---------- 设置弹层 / 抽屉 ----------
-  const navRoot = document.querySelector('.nav');
-  const pop = document.querySelector('[data-settings-pop]');
-  const toggles = Array.from(document.querySelectorAll('[data-settings-toggle]'));
-  const burger = document.querySelector('[data-nav-burger]');
-  const drawer = document.querySelector('[data-nav-drawer]');
-  const scrim = document.querySelector('[data-nav-scrim]');
-
-  const closePop = () => {
-    if (pop) pop.hidden = true;
-    toggles.forEach((t) => t.setAttribute('aria-expanded', 'false'));
-  };
-  const openPop = () => {
-    if (pop) pop.hidden = false;
-    toggles.forEach((t) => t.setAttribute('aria-expanded', 'true'));
-  };
-  toggles.forEach((t) =>
-    t.addEventListener('click', (e) => {
-      e.stopPropagation();
-      pop && pop.hidden ? openPop() : closePop();
-    })
-  );
-
-  const openDrawer = () => {
-    if (drawer) drawer.classList.add('open');
-    if (scrim) scrim.hidden = false;
-    if (burger) burger.setAttribute('aria-expanded', 'true');
-  };
-  const closeDrawer = () => {
-    if (drawer) drawer.classList.remove('open');
-    if (scrim) scrim.hidden = true;
-    if (burger) burger.setAttribute('aria-expanded', 'false');
-  };
-  if (burger) burger.addEventListener('click', (e) => { e.stopPropagation(); drawer.classList.contains('open') ? closeDrawer() : openDrawer(); });
-  if (scrim) scrim.addEventListener('click', closeDrawer);
-
-  document.addEventListener('click', (e) => {
-    if (pop && !pop.contains(e.target) && !toggles.some((t) => t.contains(e.target))) closePop();
-    if (drawer && !drawer.contains(e.target) && burger && !burger.contains(e.target)) closeDrawer();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { closePop(); closeDrawer(); }
-  });
-
-  // ---------- 菜单自定义：拖拽排序 / 隐藏 / 重置 ----------
-  const KEY_ORDER = 'nav-order';
-  const KEY_HIDDEN = 'nav-hidden';
-  const GROUPS = ['core', 'explore', 'tools'];
-
-  const readJSON = (k, fallback) => {
-    try {
-      const v = JSON.parse(localStorage.getItem(k));
-      return v == null ? fallback : v;
-    } catch (e) { return fallback; }
-  };
-  const writeJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-
-  // 默认顺序取自服务端渲染的 DOM（避免硬编码与 Astro 数据不同步）
-  const defaultOrder = {};
-  GROUPS.forEach((g) => {
-    const slot = document.querySelector(`[data-nav-slot="${g}"]`);
-    defaultOrder[g] = slot ? Array.from(slot.querySelectorAll(`[data-nav-group="${g}"]`)).map((el) => el.dataset.navItem) : [];
-  });
-
-  let order = Object.assign({}, defaultOrder, readJSON(KEY_ORDER, {}));
-  let hidden = new Set(readJSON(KEY_HIDDEN, []));
-
-  const slotsOf = (g) => Array.from(document.querySelectorAll(`[data-nav-slot="${g}"]`));
-
-  function applyOrder() {
-    GROUPS.forEach((g) => {
-      const list = (order[g] || []).filter(Boolean);
-      slotsOf(g).forEach((container) => {
-        const items = Array.from(container.querySelectorAll(`[data-nav-group="${g}"]`));
-        const map = new Map(items.map((el) => [el.dataset.navItem, el]));
-        list.forEach((href) => {
-          const el = map.get(href);
-          if (el) { container.appendChild(el); map.delete(href); }
-        });
-        // 本地已保存顺序之外的新增项补到末尾
-        map.forEach((el) => container.appendChild(el));
-      });
-      document.querySelectorAll(`[data-nav-group="${g}"]`).forEach((el) => {
-        el.classList.toggle('nav-hidden', hidden.has(el.dataset.navItem));
-      });
-    });
-  }
-
-  function syncOrderFromDOM() {
-    GROUPS.forEach((g) => {
-      const slot = slotsOf(g)[0];
-      if (!slot) return;
-      order[g] = Array.from(slot.querySelectorAll(`[data-nav-group="${g}"]`)).map((el) => el.dataset.navItem);
-    });
-    writeJSON(KEY_ORDER, order);
-  }
-
-  // 桌面导航与移动端抽屉各渲染一份同名导航项，
-  // 换组 / 移动时两处必须同步，否则会出现「桌面改了、抽屉没变」。
-  function moveToGroup(href, group) {
-    document.querySelectorAll(`[data-nav-item="${href}"]`).forEach((el) => {
-      const root = el.closest('.nav-desk') || el.closest('.nav-drawer') || document;
-      const tgt = root.querySelector(`[data-nav-slot="${group}"]`);
-      if (!tgt) return;
-      el.setAttribute('data-nav-group', group);
-      tgt.appendChild(el);
-    });
-  }
-  function syncGroupOthers(href, group, exceptEl) {
-    document.querySelectorAll(`[data-nav-item="${href}"]`).forEach((el) => {
-      if (el === exceptEl) return;
-      const root = el.closest('.nav-desk') || el.closest('.nav-drawer') || document;
-      const tgt = root.querySelector(`[data-nav-slot="${group}"]`);
-      if (!tgt) return;
-      el.setAttribute('data-nav-group', group);
-      tgt.appendChild(el);
-    });
-  }
-
-  function renderHiddenChips() {
-    const box = document.querySelector('[data-hidden-chips]');
-    if (!box) return;
-    box.innerHTML = '';
-    if (!hidden.size) return;
-    hidden.forEach((href) => {
-      const el = document.querySelector(`[data-nav-item="${href}"]`);
-      const label = el ? el.textContent.replace(/[◀▶⇄✕]/g, '').trim() : href;
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = `+ ${label}`;
-      b.title = '恢复显示';
-      b.addEventListener('click', () => {
-        hidden.delete(href);
-        writeJSON(KEY_HIDDEN, Array.from(hidden));
-        applyOrder();
-        renderHiddenChips();
-      });
-      box.appendChild(b);
-    });
-  }
-
-  // 编辑模式：开启后项可拖拽、显示 ✕ 隐藏按钮
-  let editing = false;
-  function setEditing(on) {
-    editing = on;
-    // 注意：编辑态 class 必须挂在 Nav 组件自身的根元素上。
-    // Astro 会给 scoped 选择器的每一段都加 scope 哈希，若挂在 body 上
-    // （body 由 BaseLayout 渲染，无本组件 scope）`.nav-editing .nav-hide` 将永不匹配。
-    if (navRoot) navRoot.classList.toggle('nav-editing', on);
-    document.querySelectorAll('[data-nav-group]').forEach((el) => el.setAttribute('draggable', on ? 'true' : 'false'));
-    document.querySelectorAll('[data-nav-edit-toggle]').forEach((b) => b.classList.toggle('ctrl-on', on));
-    document.querySelectorAll('[data-nav-reset]').forEach((b) => { b.hidden = !on; });
-    document.querySelectorAll('[data-nav-hint]').forEach((p) => { p.hidden = !on; });
-    if (on) renderHiddenChips();
-  }
-
-  document.querySelectorAll('[data-nav-edit-toggle]').forEach((b) =>
-    b.addEventListener('click', (e) => { e.stopPropagation(); setEditing(!editing); })
-  );
-  document.querySelectorAll('[data-nav-reset]').forEach((b) =>
-    b.addEventListener('click', (e) => {
-      e.stopPropagation();
-      try { localStorage.removeItem(KEY_ORDER); localStorage.removeItem(KEY_HIDDEN); } catch (err) {}
-      location.reload();
-    })
-  );
-
-  // 隐藏 / 恢复（✕ 在 <a> 内，需阻止默认跳转）
-  document.addEventListener('click', (e) => {
-    const h = e.target.closest && e.target.closest('[data-hide]');
-    if (!h) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const href = h.getAttribute('data-hide');
-    hidden.has(href) ? hidden.delete(href) : hidden.add(href);
-    writeJSON(KEY_HIDDEN, Array.from(hidden));
-    applyOrder();
-    renderHiddenChips();
-  });
-
-  // 顺序微调（◀ ▶）：触屏不支持 HTML5 拖拽，按钮方式保证移动端与键盘同样可用
-  document.addEventListener('click', (e) => {
-    const m = e.target.closest && e.target.closest('[data-move]');
-    if (!m) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const item = m.closest('[data-nav-group]');
-    if (!item) return;
-    const dir = parseInt(m.getAttribute('data-move'), 10);
-    const group = item.dataset.navGroup;
-    const href = item.dataset.navItem;
-    document.querySelectorAll(`[data-nav-item="${href}"]`).forEach((el) => {
-      const sibs = Array.from(el.parentNode.querySelectorAll(`[data-nav-group="${group}"]`));
-      const i = sibs.indexOf(el);
-      const j = i + dir;
-      if (j < 0 || j >= sibs.length) return;
-      if (dir < 0) el.parentNode.insertBefore(el, sibs[j]);
-      else el.parentNode.insertBefore(el, sibs[j].nextSibling);
-    });
-    syncOrderFromDOM();
-    applyOrder();
-  });
-
-  // 换组（⇄）：在 core / explore / tools 之间循环移动，让项能「挪出」原分组
-  document.addEventListener('click', (e) => {
-    const g = e.target.closest && e.target.closest('[data-move-group]');
-    if (!g) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const item = g.closest('[data-nav-group]');
-    if (!item) return;
-    const idx = GROUPS.indexOf(item.dataset.navGroup);
-    const next = GROUPS[(idx + 1) % GROUPS.length];
-    moveToGroup(item.dataset.navItem, next);
-    syncOrderFromDOM();
-    applyOrder();
-  });
-
-  // 拖拽排序（支持跨组，桌面增强；触屏请用 ◀ ▶ ⇄）
-  let dragEl = null;
-  document.addEventListener('dragstart', (e) => {
-    const it = e.target.closest && e.target.closest('[data-nav-group]');
-    if (!it || !editing) return;
-    dragEl = it;
-    it.classList.add('dragging');
-    if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', it.dataset.navItem || ''); }
-  });
-  document.addEventListener('dragover', (e) => {
-    if (!dragEl) return;
-    const it = e.target.closest && e.target.closest('[data-nav-group]');
-    if (!it || it === dragEl) return;
-    e.preventDefault();
-    const r = it.getBoundingClientRect();
-    const horiz = r.width > r.height * 1.6;
-    const after = horiz ? e.clientX - r.left > r.width / 2 : e.clientY - r.top > r.height / 2;
-    // 跨组拖拽：先归入目标所在组，再插入目标前/后
-    dragEl.setAttribute('data-nav-group', it.dataset.navGroup);
-    it.parentNode.insertBefore(dragEl, after ? it.nextSibling : it);
-  });
-  document.addEventListener('dragend', () => {
-    if (!dragEl) return;
-    dragEl.classList.remove('dragging');
-    syncGroupOthers(dragEl.dataset.navItem, dragEl.dataset.navGroup, dragEl);
-    dragEl = null;
-    syncOrderFromDOM();
-    applyOrder();
-  });
-  document.addEventListener('drop', (e) => { if (dragEl) e.preventDefault(); });
-
-  applyOrder();
-  renderHiddenChips();
-</script>
