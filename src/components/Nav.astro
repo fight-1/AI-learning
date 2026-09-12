@@ -41,7 +41,7 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
             data-nav-item={l.href}
             data-nav-group="core"
             draggable="false"
-          >{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
+          >{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
         ))}
       </div>
       <div class="nav-drop">
@@ -50,7 +50,7 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
         </button>
         <div class="nav-menu" data-nav-slot="explore" role="menu">
           {explore.map((l) => (
-            <a href={l.href} class:list={['nav-menu-item', { active: isActive(l.href) }]} role="menuitem" data-nav-item={l.href} data-nav-group="explore" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
+            <a href={l.href} class:list={['nav-menu-item', { active: isActive(l.href) }]} role="menuitem" data-nav-item={l.href} data-nav-group="explore" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
           ))}
         </div>
       </div>
@@ -60,8 +60,9 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
         </button>
         <div class="nav-menu" data-nav-slot="tools" role="menu">
           {tools.map((l) => (
-            <a href={l.href} class:list={['nav-menu-item', { active: isActive(l.href) }]} role="menuitem" data-nav-item={l.href} data-nav-group="tools" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
+            <a href={l.href} class:list={['nav-menu-item', { active: isActive(l.href) }]} role="menuitem" data-nav-item={l.href} data-nav-group="tools" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
           ))}
+          <button type="button" class="nav-menu-item" data-nav-item="radar" data-nav-group="tools" data-radar draggable="false">📡 雷达<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label="前移雷达">◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label="后移雷达">▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label="换组雷达">⇄</span><span class="nav-hide" data-hide="radar" role="button" tabindex="0" aria-label="隐藏雷达">✕</span></span></button>
         </div>
       </div>
     </nav>
@@ -93,20 +94,21 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
       <div class="drawer-group" data-nav-slot="core">
         <p class="drawer-title">核心</p>
         {core.map((l) => (
-          <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href} data-nav-group="core" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
+          <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href} data-nav-group="core" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
         ))}
       </div>
       <div class="drawer-group" data-nav-slot="explore">
         <p class="drawer-title">探索</p>
         {explore.map((l) => (
-          <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href} data-nav-group="explore" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
+          <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href} data-nav-group="explore" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
         ))}
       </div>
       <div class="drawer-group" data-nav-slot="tools">
         <p class="drawer-title">工具</p>
         {tools.map((l) => (
-          <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href} data-nav-group="tools" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
-        ))}
+          <a href={l.href} class:list={['drawer-item', { active: isActive(l.href) }]} data-nav-item={l.href} data-nav-group="tools" draggable="false">{l.label}<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label={`前移${l.label}`}>◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label={`后移${l.label}`}>▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label={`换组${l.label}`}>⇄</span><span class="nav-hide" data-hide={l.href} role="button" tabindex="0" aria-label={`隐藏${l.label}`}>✕</span></span></a>
+          ))}
+          <button type="button" class="drawer-item" data-nav-item="radar" data-nav-group="tools" data-radar draggable="false">📡 雷达<span class="nav-ops"><span class="nav-move" data-move="-1" role="button" tabindex="0" aria-label="前移雷达">◀</span><span class="nav-move" data-move="1" role="button" tabindex="0" aria-label="后移雷达">▶</span><span class="nav-move" data-move-group="1" role="button" tabindex="0" title="换到下一分组" aria-label="换组雷达">⇄</span><span class="nav-hide" data-hide="radar" role="button" tabindex="0" aria-label="隐藏雷达">✕</span></span></button>
       </div>
       <p class="drawer-title">设置</p>
       <div class="drawer-settings">
@@ -240,6 +242,18 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
   }
   .nav-menu-item:hover { background: var(--surface-2); color: var(--accent); }
   .nav-menu-item.active { color: var(--accent); }
+  button.nav-menu-item,
+  button.drawer-item {
+    width: 100%;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    color: var(--text);
+  }
+  button.drawer-item { font-size: 15px; }
 
   .nav-controls {
     margin-left: auto;
@@ -547,6 +561,28 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
     writeJSON(KEY_ORDER, order);
   }
 
+  // 桌面导航与移动端抽屉各渲染一份同名导航项，
+  // 换组 / 移动时两处必须同步，否则会出现「桌面改了、抽屉没变」。
+  function moveToGroup(href, group) {
+    document.querySelectorAll(`[data-nav-item="${href}"]`).forEach((el) => {
+      const root = el.closest('.nav-desk') || el.closest('.nav-drawer') || document;
+      const tgt = root.querySelector(`[data-nav-slot="${group}"]`);
+      if (!tgt) return;
+      el.setAttribute('data-nav-group', group);
+      tgt.appendChild(el);
+    });
+  }
+  function syncGroupOthers(href, group, exceptEl) {
+    document.querySelectorAll(`[data-nav-item="${href}"]`).forEach((el) => {
+      if (el === exceptEl) return;
+      const root = el.closest('.nav-desk') || el.closest('.nav-drawer') || document;
+      const tgt = root.querySelector(`[data-nav-slot="${group}"]`);
+      if (!tgt) return;
+      el.setAttribute('data-nav-group', group);
+      tgt.appendChild(el);
+    });
+  }
+
   function renderHiddenChips() {
     const box = document.querySelector('[data-hidden-chips]');
     if (!box) return;
@@ -554,7 +590,7 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
     if (!hidden.size) return;
     hidden.forEach((href) => {
       const el = document.querySelector(`[data-nav-item="${href}"]`);
-      const label = el ? el.textContent.replace('✕', '').trim() : href;
+      const label = el ? el.textContent.replace(/[◀▶⇄✕]/g, '').trim() : href;
       const b = document.createElement('button');
       b.type = 'button';
       b.textContent = `+ ${label}`;
@@ -617,17 +653,36 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
     const item = m.closest('[data-nav-group]');
     if (!item) return;
     const dir = parseInt(m.getAttribute('data-move'), 10);
-    const sibs = Array.from(item.parentNode.querySelectorAll(`[data-nav-group="${item.dataset.navGroup}"]`));
-    const i = sibs.indexOf(item);
-    const j = i + dir;
-    if (j < 0 || j >= sibs.length) return;
-    if (dir < 0) item.parentNode.insertBefore(item, sibs[j]);
-    else item.parentNode.insertBefore(item, sibs[j].nextSibling);
+    const group = item.dataset.navGroup;
+    const href = item.dataset.navItem;
+    document.querySelectorAll(`[data-nav-item="${href}"]`).forEach((el) => {
+      const sibs = Array.from(el.parentNode.querySelectorAll(`[data-nav-group="${group}"]`));
+      const i = sibs.indexOf(el);
+      const j = i + dir;
+      if (j < 0 || j >= sibs.length) return;
+      if (dir < 0) el.parentNode.insertBefore(el, sibs[j]);
+      else el.parentNode.insertBefore(el, sibs[j].nextSibling);
+    });
     syncOrderFromDOM();
     applyOrder();
   });
 
-  // 拖拽排序（仅同组内，桌面增强；触屏请用 ◀ ▶）
+  // 换组（⇄）：在 core / explore / tools 之间循环移动，让项能「挪出」原分组
+  document.addEventListener('click', (e) => {
+    const g = e.target.closest && e.target.closest('[data-move-group]');
+    if (!g) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const item = g.closest('[data-nav-group]');
+    if (!item) return;
+    const idx = GROUPS.indexOf(item.dataset.navGroup);
+    const next = GROUPS[(idx + 1) % GROUPS.length];
+    moveToGroup(item.dataset.navItem, next);
+    syncOrderFromDOM();
+    applyOrder();
+  });
+
+  // 拖拽排序（支持跨组，桌面增强；触屏请用 ◀ ▶ ⇄）
   let dragEl = null;
   document.addEventListener('dragstart', (e) => {
     const it = e.target.closest && e.target.closest('[data-nav-group]');
@@ -640,16 +695,18 @@ const isActive = (href) => path === href || (href !== '/' && path.startsWith(hre
     if (!dragEl) return;
     const it = e.target.closest && e.target.closest('[data-nav-group]');
     if (!it || it === dragEl) return;
-    if (it.dataset.navGroup !== dragEl.dataset.navGroup) return;
     e.preventDefault();
     const r = it.getBoundingClientRect();
     const horiz = r.width > r.height * 1.6;
     const after = horiz ? e.clientX - r.left > r.width / 2 : e.clientY - r.top > r.height / 2;
+    // 跨组拖拽：先归入目标所在组，再插入目标前/后
+    dragEl.setAttribute('data-nav-group', it.dataset.navGroup);
     it.parentNode.insertBefore(dragEl, after ? it.nextSibling : it);
   });
   document.addEventListener('dragend', () => {
     if (!dragEl) return;
     dragEl.classList.remove('dragging');
+    syncGroupOthers(dragEl.dataset.navItem, dragEl.dataset.navGroup, dragEl);
     dragEl = null;
     syncOrderFromDOM();
     applyOrder();
