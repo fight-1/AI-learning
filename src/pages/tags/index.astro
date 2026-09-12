@@ -1,0 +1,72 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getNotes, uniqueTags } from '../../lib/notes';
+
+const notes = await getNotes();
+const maxCount = Math.max(
+  1,
+  ...uniqueTags(notes).map((t) => notes.filter((n) => n.data.tags.includes(t)).length)
+);
+const tags = uniqueTags(notes)
+  .map((t) => {
+    const count = notes.filter((n) => n.data.tags.includes(t)).length;
+    return { name: t, count, size: Math.max(1, Math.ceil((count / maxCount) * 5)) };
+  })
+  .sort((a, b) => b.count - a.count);
+---
+
+<BaseLayout title="标签 · fight-1">
+  <div class="page-head">
+    <h1>标签星轨</h1>
+    <span class="count">{tags.length} 个标签</span>
+  </div>
+  <p class="page-sub">标签即星轨：拨动星轨发现跨界内容。</p>
+
+  <div class="view-bar" role="group" aria-label="视图切换">
+    <button type="button" class="on" data-view="cloud" aria-pressed="true">☁ 文字云</button>
+    <button type="button" data-view="orbits" aria-pressed="false">✦ 引力星轨</button>
+  </div>
+
+  <div class="cloud" data-panel="cloud">
+    {tags.map((t) => (
+      <a class:list={['chip', `tag-size-${t.size}`]} href={`/notes?tag=${encodeURIComponent(t.name)}`}># {t.name} <b>{t.count}</b></a>
+    ))}
+  </div>
+
+  <div class="orbits-wrap" data-panel="orbits" hidden>
+    <canvas class="orbits-canvas"></canvas>
+    <p class="hint">移动光标牵引星轨 · 点击节点跃迁至该标签</p>
+  </div>
+</BaseLayout>
+
+<style>
+  .cloud { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+  .cloud .chip b { color: var(--accent); }
+  .orbits-wrap { position: relative; margin-top: 10px; }
+  .orbits-canvas { width: 100%; height: 60vh; display: block; border: 1px solid var(--border); border-radius: 14px; background: radial-gradient(circle at 50% 50%, rgba(0,0,0,.25), transparent 70%); }
+  .hint { color: var(--muted); font-size: 12px; text-align: center; margin-top: 8px; }
+</style>
+
+<script>
+  import { initOrbits } from '../../scripts/orbits.js';
+  const btns = document.querySelectorAll<HTMLButtonElement>('[data-view]');
+  const panels = document.querySelectorAll<HTMLElement>('[data-panel]');
+  let orbitsReady = false;
+  btns.forEach((b) =>
+    b.addEventListener('click', async () => {
+      btns.forEach((x) => {
+        const on = x === b;
+        x.classList.toggle('on', on);
+        x.setAttribute('aria-pressed', String(on));
+      });
+      const v = b.dataset.view;
+      panels.forEach((p) => (p.hidden = p.dataset.panel !== v));
+      if (v === 'orbits' && !orbitsReady) {
+        orbitsReady = true;
+        const cv = document.querySelector('.orbits-canvas');
+        const g = await fetch('/tags-graph.json').then((r) => r.json());
+        initOrbits(cv, g);
+      }
+    })
+  );
+</script>

@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.astro/
+.cache/
+.output/
+
+# 不提交 lock：本环境无法跑 npm 同步 package-lock.json；Cloudflare Pages 检测到
+# lock 会改用 npm ci，一旦与 package.json 失同步即构建失败。保持不提交，让
+# CI / Cloudflare 一律走 npm install（按 package.json 解析）。
+package-lock.json
+
+# 本地环境与日志
+.env
+.env.*
+npm-debug.log*
+yarn-error.log*
+
+# Agent 本地会话/记忆数据（不发布到线上仓库）
+.workbuddy/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

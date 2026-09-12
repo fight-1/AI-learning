@@ -1,0 +1,136 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getNotes, formatDate } from '../lib/notes';
+
+const notes = await getNotes();
+const MATURITY: Record<string, { label: string; icon: string; cls: string }> = {
+  draft: { label: '草稿', icon: '🌱', cls: 'draft' },
+  growing: { label: '成长中', icon: '🌿', cls: 'growing' },
+  polished: { label: '已打磨', icon: '💎', cls: 'polished' },
+};
+const groups: Record<number, typeof notes> = {};
+for (const n of notes) {
+  const y = n.data.date.getFullYear();
+  (groups[y] = groups[y] || []).push(n);
+}
+const years = Object.keys(groups)
+  .map(Number)
+  .sort((a, b) => b - a);
+---
+
+<BaseLayout title="归档 · fight-1 的 AI 学习笔记" description="全部文章的年度归档，按时间倒序">
+  <div class="page-head">
+    <h1>归档</h1>
+    <p class="count">共 {notes.length} 篇</p>
+  </div>
+  <p class="page-sub">按发布时间倒序排列。</p>
+
+  {years.map((y) => {
+    const items = groups[y];
+    const over = items.length > 5;
+    return (
+      <section class="year">
+        <h2 class="year-h">{y}<span class="y-n">{items.length} 篇</span></h2>
+        <ul class="year-list" data-collapse={over ? 'on' : 'off'} data-total={items.length}>
+          {items.map((n, i) => {
+            const mat = MATURITY[n.data.maturity || 'growing'];
+            return (
+            <li class:list={[{ 'is-extra': i >= 5 }]}>
+              <time class="d">{formatDate(n.data.date)}</time>
+              <a class="t" href={`/notes/${n.id}/`} data-astro-prefetch>{n.data.title}</a>
+              <span class="c"># {n.data.category}</span>
+              <span class="mat-badge" data-mat={mat.cls} title={`成熟度：${mat.label}`}>{mat.icon} {mat.label}</span>
+            </li>
+          )})}
+        </ul>
+        {over && (
+          <button class="more-btn" type="button" data-expand>展开全部（{items.length} 篇）</button>
+        )}
+      </section>
+    );
+  })}
+</BaseLayout>
+
+<script>
+  import { initExpand } from '../scripts/expand-list.js';
+  initExpand();
+</script>
+
+<style>
+  .year { margin-bottom: 30px; }
+  .year-h {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 18px;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin: 0 0 12px;
+    position: sticky;
+    top: 64px;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(6px);
+    z-index: 5;
+  }
+  .year-h .y-n {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .year-list { list-style: none; padding: 0; margin: 0; }
+  .year-list li {
+    display: grid;
+    grid-template-columns: 110px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px dashed var(--border);
+    border-left: 3px solid transparent;
+    padding-left: 10px;
+    border-radius: 0 8px 8px 0;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  /* 悬浮高亮：背景微亮 + 左侧强调色竖条 */
+  .year-list li:hover,
+  .year-list li:focus-within {
+    background: var(--surface);
+    border-left-color: var(--accent);
+  }
+  /* 默认只展示前 5 条，其余由「展开全部」切换 */
+  [data-collapse='on'] .is-extra { display: none; }
+  .more-btn {
+    margin-top: 10px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .more-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .more-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .year-list .d { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .year-list .t { color: var(--text); font-size: 15px; }
+  .year-list .t:hover { color: var(--accent); text-decoration: none; }
+  .year-list .c { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  /* 成熟度徽章（与文章页/卡片同色系） */
+  .mat-badge {
+    padding: 1px 7px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .mat-badge[data-mat='polished'] { color: var(--accent-color); border-color: var(--accent-color); }
+  .mat-badge[data-mat='draft'] { opacity: 0.75; font-style: italic; }
+  @media (max-width: 560px) {
+    .year-list li { grid-template-columns: 84px 1fr auto; }
+    .year-list .c { grid-column: 2; }
+    .year-list .mat-badge { grid-column: 3; }
+  }
+</style>

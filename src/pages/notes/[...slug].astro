@@ -1,0 +1,949 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Toc from '../../components/Toc.astro';
+import { getNotes, formatDate, readingTime, getBacklinks, getSeriesContext } from '../../lib/notes';
+import NoteCard from '../../components/NoteCard.astro';
+import type { GetStaticPaths } from 'astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
+export const getStaticPaths = (async () => {
+  const notes = await getNotes();
+  return notes.map((note, i) => ({
+    params: { slug: note.id },
+    props: {
+      note,
+      prev: i > 0 ? notes[i - 1] : null,
+      next: i < notes.length - 1 ? notes[i + 1] : null,
+    },
+  }));
+}) satisfies GetStaticPaths;
+
+const { note, prev, next } = Astro.props;
+const { Content, headings } = await render(note);
+const { title, date, category, tags, summary, cover } = note.data;
+const minutes = readingTime(note.body || '');
+// 最后更新时间（可选）：仅在晚于发布时间时展示
+const updated = note.data.updated;
+const showUpdated = updated && updated.getTime() > date.getTime();
+// 成熟度徽章：让读者一眼判断这篇的完成度
+const maturity = note.data.maturity || 'growing';
+const MATURITY = {
+  draft: { label: '草稿', icon: '🌱' },
+  growing: { label: '成长中', icon: '🌿' },
+  polished: { label: '已打磨', icon: '💎' },
+};
+const mat = MATURITY[maturity] || MATURITY.growing;
+// 相关阅读：按标签重合度(权重2) + 同分类(权重1)打分取前4
+const allNotes = await getNotes();
+// 双链反向链接 + 系列上下文
+const backlinks = getBacklinks(note.id, allNotes);
+const seriesCtx = getSeriesContext(note.id, allNotes);
+const scored = allNotes
+  .filter((n) => n.id !== note.id)
+  .map((n) => {
+    const common = n.data.tags.filter((t) => tags.includes(t)).length;
+    const catScore = n.data.category === category ? 1 : 0;
+    return { n, score: common * 2 + catScore };
+  });
+const related = scored
+  .filter((x) => x.score > 0)
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 4)
+  .map((x) => x.n);
+// 无严格相关时回退到最新几篇，保证区块始终可见
+const fallback = allNotes.filter((n) => n.id !== note.id).slice(0, 4);
+const display = related.length ? related : fallback;
+const relatedTitle = related.length ? '相关阅读' : '延伸阅读';
+const siteName = 'fight-1 的 AI 学习笔记';
+// OG 分享图优先级：本文章的动态生成图（public/og/<slug>.png，scripts/gen-og.py 产出）
+// > 文章 cover > 全站默认图。构建期检查文件是否存在，缺失自动回退。
+const ogFile = note.id.replace(/\//g, '-') + '.png';
+const hasOgPng = fs.existsSync(path.join(process.cwd(), 'public', 'og', ogFile));
+const ogImage = hasOgPng
+  ? '/og/' + ogFile
+  : cover
+    ? new URL(cover, Astro.site).href
+    : '/og-default.svg';
+const articleLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description: summary,
+  datePublished: date.toISOString(),
+  // 有 updated 就用它，否则退回发布时间（避免结构化数据里的修改时间失真）
+  dateModified: (updated || date).toISOString(),
+  author: { '@type': 'Person', name: 'fight-1' },
+  keywords: tags.join(', '),
+  mainEntityOfPage: { '@type': 'WebPage', '@id': Astro.url.href },
+  publisher: { '@type': 'Organization', name: siteName },
+  image: new URL(ogImage, Astro.site).href,
+};
+// 面包屑结构化数据：首页 › 笔记 › 分类 › 本文
+const base = (Astro.site && Astro.site.href.replace(/\/$/, '')) || '';
+const breadcrumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: '首页', item: base + '/' },
+    { '@type': 'ListItem', position: 2, name: '笔记', item: base + '/notes' },
+    ...(category
+      ? [{ '@type': 'ListItem', position: 3, name: category, item: base + '/notes?category=' + encodeURIComponent(category) }]
+      : []),
+    {
+      '@type': 'ListItem',
+      position: category ? 4 : 3,
+      name: title,
+      item: Astro.url.href,
+    },
+  ],
+};
+---
+
+<BaseLayout title={`${title} · fight-1`} description={summary} ogImage={ogImage} ogType="article">
+  <div class="progress" id="progress"></div>
+
+  <article class="detail">
+    <nav class="detail-crumbs" aria-label="面包屑">
+      <a href="/notes" class="crumb-back" data-astro-prefetch>← 笔记列表</a>
+      <span class="crumb-sep">/</span>
+      {category && (
+        <>
+          <a href={`/notes?category=${encodeURIComponent(category)}`} class="crumb-cat" data-astro-prefetch># {category}</a>
+          <span class="crumb-sep">/</span>
+        </>
+      )}
+      <span class="crumb-title">{title}</span>
+    </nav>
+    <header class="detail-head">
+      <div class="meta">
+        <a class="chip" href={`/notes?category=${encodeURIComponent(category)}`}># {category}</a>
+        <span class="mat-badge" data-mat={maturity} title={`成熟度：${mat.label}`}>{mat.icon} {mat.label}</span>
+        <time>{formatDate(date)}</time>
+        {showUpdated && <span class="upd">· 更新于 {formatDate(updated)}</span>}
+        <span>· 约 {minutes} 分钟</span>
+        <button class="like-btn" type="button" data-like={note.id} aria-label="注入能量">
+          <span class="reactor">⚛</span> 注入能量
+        </button>
+        <button class="fav-btn fav-inline" type="button" data-fav={note.id}>☆ 收藏</button>
+        <button class="focus-btn fav-inline" type="button" id="focus-toggle">专注阅读</button>
+        <button class="focus-btn fav-inline" type="button" id="focus-align-toggle" title="切换专注阅读正文对齐（居左 / 居中）" aria-label="切换专注阅读正文对齐">正文居左</button>
+      </div>
+      <h1>{title}</h1>
+      <p class="lead">{summary}</p>
+      <div class="tags">
+        {tags.map((t) => <a class="chip" href={`/notes?tag=${encodeURIComponent(t)}`}># {t}</a>)}
+      </div>
+    </header>
+
+    <div class="detail-body">
+      <div class="content prose" data-pagefind-body data-pagefind-meta={`title:${title}`}>
+        <Content />
+      </div>
+      <aside class="side">
+        <Toc headings={headings} />
+      </aside>
+    </div>
+
+    <!-- 分享栏：复制链接 / 微博 / X / 微信 -->
+    <div class="share-bar" role="group" aria-label="分享文章">
+      <span class="share-label">分享：</span>
+      <button class="share-btn" type="button" data-share="copy" title="复制链接" aria-label="复制链接">🔗</button>
+      <button class="share-btn" type="button" data-share="weibo" title="分享到微博" aria-label="分享到微博">微博</button>
+      <button class="share-btn" type="button" data-share="twitter" title="分享到 X" aria-label="分享到 X">X</button>
+      <button class="share-btn" type="button" data-share="wechat" title="分享到微信" aria-label="分享到微信">微信</button>
+      <button class="share-btn" type="button" data-share="print" title="打印 / 导出 PDF（已适配打印样式）" aria-label="打印或导出 PDF">🖨️ PDF</button>
+      <button class="share-btn" type="button" data-share="offline" title="保存到离线（断网也能读本篇）" aria-label="保存到离线">📥</button>
+      <a
+        class="share-btn share-link"
+        href={`/notes/${note.id}.md`}
+        download
+        title="下载原文 Markdown"
+        aria-label="下载原文 Markdown"
+      >⤓ MD</a>
+    </div>
+
+    {seriesCtx && (
+      <nav class="series-bar" aria-label="系列导航">
+        <a class="series-name" href="/series" data-astro-prefetch>📚 {seriesCtx.name}</a>
+        <span class="series-pos">第 {seriesCtx.index + 1} / {seriesCtx.list.length} 篇</span>
+        <span class="series-nav">
+          {seriesCtx.prev
+            ? <a class="series-prev" href={`/notes/${seriesCtx.prev.id}`} data-astro-prefetch>← {seriesCtx.prev.data.title}</a>
+            : <span class="series-disabled">← 系列首篇</span>}
+          {seriesCtx.next
+            ? <a class="series-next" href={`/notes/${seriesCtx.next.id}`} data-astro-prefetch>下一篇 → {seriesCtx.next.data.title}</a>
+            : <span class="series-disabled">系列末篇 →</span>}
+        </span>
+      </nav>
+    )}
+
+    <nav class="pager">
+      {prev ? <a class="pager-link prev" href={`/notes/${prev.id}`}><span>← 上一篇</span><b>{prev.data.title}</b></a> : <span></span>}
+      {next ? <a class="pager-link next" href={`/notes/${next.id}`}><span>下一篇 →</span><b>{next.data.title}</b></a> : <span></span>}
+    </nav>
+
+    <section class="related" data-reveal>
+      <h2>{relatedTitle}</h2>
+      <div class="grid">
+        {display.map((n) => <NoteCard note={n} />)}
+      </div>
+    </section>
+
+    {backlinks.length > 0 && (
+      <section class="backlinks" data-reveal>
+        <h2>🔗 被这些文章引用</h2>
+        <ul class="bl-list">
+          {backlinks.map((n) => (
+            <li>
+              <a href={`/notes/${n.id}`} data-astro-prefetch>{n.data.title}</a>
+              <span class="bl-cat"># {n.data.category}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    <!-- 星际广播：评论区 -->
+    <section class="comm-channel">
+      <h2>📻 通讯频道</h2>
+      <p class="muted">发表评论即向星际广播，讯息以抛物线落入频道。</p>
+      <p class="comm-local-note">
+        <span class="comm-local-badge">💾 仅本地可见</span>
+        <span>
+          这里的讯息只保存在<strong>你这台设备的浏览器</strong>（localStorage，按文章分别存储），
+          <strong>不会上传服务器、其他访客看不到</strong>；清理浏览器数据或换设备后不会保留。
+          想公开留言请用下方「评论（GitHub）」。
+        </span>
+      </p>
+      <div class="comm-tools">
+        <button class="comm-tool" id="comm-export" type="button" title="把本机讯息导出为 JSON 备份">⤓ 导出备份</button>
+        <button class="comm-tool" id="comm-import" type="button" title="从 JSON 备份导入讯息">⤒ 导入</button>
+      </div>
+      <form id="comm-form">
+        <input id="comm-input" type="text" placeholder="向星际广播一条讯息…" autocomplete="off" />
+        <button type="submit">发送</button>
+      </form>
+      <div id="comm-list"></div>
+    </section>
+
+  <!-- giscus 评论：默认关闭，由下方脚本按 localStorage.comments 懒加载；
+       开启后才会注入 giscus.app/client.js，避免默认无谓外网请求与加载问题 -->
+  <section class="giscus" id="giscus-comments">
+    <h2>💬 评论（GitHub）</h2>
+    <p class="muted" data-giscus-hint>评论区默认关闭。可在「舰长控制台 → 航行设置」或战甲面板「动态交互 → 评论区」开启（需可访问 giscus.app）。</p>
+  </section>
+  <script is:inline>
+    (function () {
+      var host = document.getElementById('giscus-comments');
+      if (!host) return;
+      function load() {
+        if (host.querySelector('script[data-giscus]')) return;
+        var s = document.createElement('script');
+        s.src = 'https://giscus.app/client.js';
+        s.setAttribute('data-giscus', '');
+        s.setAttribute('data-repo', 'fight-1/AI-learning');
+        s.setAttribute('data-repo-id', '612522224');
+        s.setAttribute('data-category', 'General');
+        s.setAttribute('data-mapping', 'pathname');
+        s.setAttribute('data-strict', '0');
+        s.setAttribute('data-reactions-enabled', '1');
+        s.setAttribute('data-emit-metadata', '0');
+        s.setAttribute('data-input-position', 'bottom');
+        s.setAttribute('data-theme', 'preferred_color_scheme');
+        s.setAttribute('data-lang', 'zh-CN');
+        s.setAttribute('data-loading', 'lazy');
+        s.crossOrigin = 'anonymous';
+        s.async = true;
+        host.appendChild(s);
+      }
+      function unload() {
+        var s = host.querySelector('script[data-giscus]'); if (s) s.remove();
+        var f = host.querySelector('iframe.giscus-frame'); if (f) f.remove();
+      }
+      // 加载状态反馈：开启后若长时间没出现 iframe，给出可读的排查提示，
+      // 避免「点了开启却毫无反应」的困惑。
+      var hint = host.querySelector('[data-giscus-hint]');
+      var timer = null;
+      function watch() {
+        clearTimeout(timer);
+        var on = (localStorage.getItem('comments') || 'off') === 'on';
+        if (!on) {
+          if (hint) hint.textContent = '评论区已关闭。可在「舰长控制台 → 航行设置」或战甲面板「动态交互 → 评论区」开启。';
+          return;
+        }
+        if (host.querySelector('iframe.giscus-frame')) {
+          if (hint) hint.textContent = '';
+          return;
+        }
+        if (hint) hint.textContent = '正在加载 GitHub 评论…';
+        timer = setTimeout(function () {
+          if (host.querySelector('iframe.giscus-frame')) {
+            if (hint) hint.textContent = '';
+          } else if (hint) {
+            hint.innerHTML =
+              '⚠️ 评论未加载成功。常见原因：① 网络无法访问 <code>giscus.app</code> 或 <code>api.github.com</code>' +
+              '（若开了代理，请把这两个域名都加入直连）；② 仓库未开启 Discussions 或未安装 giscus app。' +
+              '在此之前可先用上方「通讯频道」本地留言。';
+          }
+        }, 8000);
+      }
+      function apply() {
+        var on = (localStorage.getItem('comments') || 'off') === 'on';
+        if (on) load(); else unload();
+        document.documentElement.setAttribute('data-comments', on ? 'on' : 'off');
+        watch();
+      }
+      apply();
+      new MutationObserver(apply).observe(document.documentElement, { attributes: true, attributeFilter: ['data-comments'] });
+    })();
+  </script>
+  </article>
+</BaseLayout>
+
+<script type="application/ld+json" set:html={JSON.stringify(articleLd)} />
+<script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
+
+<script>
+  import { initMermaid } from '../../scripts/mermaid-lazy.js';
+  import { initClippings } from '../../scripts/clippings.js';
+  initMermaid();
+  initClippings();
+
+  // 通讯频道：本地持久化 + 嵌套回复（树形）
+  (function () {
+    const id = location.pathname;
+    const KEY = 'comm:' + id;
+    const list = document.getElementById('comm-list');
+    const form = document.getElementById('comm-form');
+    const input = document.getElementById('comm-input');
+    if (!list || !form) return;
+
+    const esc = (s) =>
+      String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const load = () => {
+      try {
+        return JSON.parse(localStorage.getItem(KEY) || '[]');
+      } catch (e) {
+        return [];
+      }
+    };
+    const save = (a) => localStorage.setItem(KEY, JSON.stringify(a));
+
+    /* 本地讯息备份：导出 JSON / 导入 JSON（清缓存前可导出，换设备可导入） */
+    const expBtn = document.getElementById('comm-export');
+    const impBtn = document.getElementById('comm-import');
+    if (expBtn) {
+      expBtn.addEventListener('click', () => {
+        const payload = JSON.stringify(
+          { path: id, savedAt: new Date().toISOString(), messages: load() },
+          null,
+          2
+        );
+        const url = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'comm-' + id.replace(/[^\w-]+/g, '_') + '.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+    }
+    if (impBtn) {
+      impBtn.addEventListener('click', () => {
+        const inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = 'application/json,.json';
+        inp.style.display = 'none';
+        inp.onchange = () => {
+          const f = inp.files && inp.files[0];
+          if (!f) return;
+          const r = new FileReader();
+          r.onload = () => {
+            try {
+              const o = JSON.parse(String(r.result));
+              const msgs = Array.isArray(o) ? o : (o && o.messages);
+              if (!Array.isArray(msgs)) return;
+              save(msgs);
+              render();
+            } catch (e) {}
+          };
+          r.readAsText(f);
+          inp.remove();
+        };
+        document.body.appendChild(inp);
+        inp.click();
+        inp.remove();
+      });
+    }
+    let uid = Date.now();
+    const newId = () => 'c' + uid++;
+
+    function render() {
+      const items = load();
+      const byId = new Map(items.map((c) => [c.id, { ...c, children: [] }]));
+      const roots = [];
+      for (const c of byId.values()) {
+        if (c.parent && byId.has(c.parent)) byId.get(c.parent).children.push(c);
+        else roots.push(c);
+      }
+      roots.sort((a, b) => (b.ts || 0) - (a.ts || 0)); // 顶层：新在上
+      const sortCh = (arr) => {
+        arr.sort((a, b) => (a.ts || 0) - (b.ts || 0)); // 回复：旧在上
+        arr.forEach((c) => sortCh(c.children));
+      };
+      sortCh(roots);
+      const walk = (node, depth) => {
+        const pad = Math.min(depth, 5) * 18;
+        const replies = node.children.map((ch) => walk(ch, depth + 1)).join('');
+        return `<div class="comment-bubble" data-cid="${node.id}" style="margin-left:${pad}px">
+          <div class="cb-head"><b>${esc(node.n)}</b><span class="cb-time">${esc(node.t)}</span></div>
+          <div class="cb-body" data-body="${node.id}">${esc(node.m)}</div>
+          <div class="cb-actions">
+            <button class="cb-reply" type="button" data-reply="${node.id}">回复</button>
+            <button class="cb-edit" type="button" data-edit="${node.id}">编辑</button>
+            <button class="cb-del" type="button" data-del="${node.id}">删除</button>
+          </div>
+          <div class="cb-replybox" data-box="${node.id}" hidden>
+            <input class="cb-input" type="text" placeholder="回复 ${esc(node.n)}…" autocomplete="off" />
+            <button class="cb-send" type="button" data-send="${node.id}">发送</button>
+          </div>
+          <div class="cb-editbox" data-editbox="${node.id}" hidden>
+            <textarea class="cb-editarea" rows="2">${esc(node.m)}</textarea>
+            <div class="cb-editrow">
+              <button class="cb-save" type="button" data-save="${node.id}">保存</button>
+              <button class="cb-cancel" type="button" data-cancel="${node.id}">取消</button>
+            </div>
+          </div>
+          ${replies}
+        </div>`;
+      };
+      list.innerHTML =
+        roots.map((r) => walk(r, 0)).join('') ||
+        '<p class="muted" style="opacity:.7">暂无讯息，向星际广播第一条吧。</p>';
+    }
+
+    render();
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = input.value.trim();
+      if (!v) return;
+      const items = load();
+      items.push({ id: newId(), parent: null, n: '舰长 fight-1', t: new Date().toLocaleString('zh-CN'), m: v, ts: Date.now() });
+      save(items);
+      input.value = '';
+      render();
+      document.dispatchEvent(new CustomEvent('comm:sent'));
+    });
+
+    list.addEventListener('click', (e) => {
+      const rb = e.target.closest('[data-reply]');
+      if (rb) {
+        const cid = rb.dataset.reply;
+        const box = list.querySelector(`[data-box="${cid}"]`);
+        if (!box) return;
+        const wasOpen = !box.hidden;
+        list.querySelectorAll('.cb-replybox').forEach((b) => (b.hidden = true));
+        list.querySelectorAll('.cb-editbox').forEach((b) => (b.hidden = true));
+        box.hidden = wasOpen;
+        if (!wasOpen) box.querySelector('.cb-input').focus();
+        return;
+      }
+      const sb = e.target.closest('[data-send]');
+      if (sb) {
+        const cid = sb.dataset.send;
+        const box = list.querySelector(`[data-box="${cid}"]`);
+        const val = box.querySelector('.cb-input').value.trim();
+        if (!val) return;
+        const items = load();
+        items.push({ id: newId(), parent: cid, n: '舰长 fight-1', t: new Date().toLocaleString('zh-CN'), m: val, ts: Date.now() });
+        save(items);
+        render();
+        document.dispatchEvent(new CustomEvent('comm:sent'));
+        return;
+      }
+      // 编辑：显示编辑框
+      const eb = e.target.closest('[data-edit]');
+      if (eb) {
+        const cid = eb.dataset.edit;
+        list.querySelectorAll('.cb-replybox').forEach((b) => (b.hidden = true));
+        const box = list.querySelector(`[data-editbox="${cid}"]`);
+        if (!box) return;
+        list.querySelectorAll('.cb-editbox').forEach((b) => (b.hidden = true));
+        box.hidden = false;
+        const ta = box.querySelector('.cb-editarea');
+        ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+        return;
+      }
+      // 取消编辑
+      const cb = e.target.closest('[data-cancel]');
+      if (cb) {
+        const box = list.querySelector(`[data-editbox="${cb.dataset.cancel}"]`);
+        if (box) box.hidden = true;
+        return;
+      }
+      // 保存编辑
+      const sv = e.target.closest('[data-save]');
+      if (sv) {
+        const cid = sv.dataset.save;
+        const box = list.querySelector(`[data-editbox="${cid}"]`);
+        const val = box.querySelector('.cb-editarea').value.trim();
+        if (!val) return;
+        const items = load();
+        const it = items.find((x) => x.id === cid);
+        if (it) { it.m = val; it.edited = new Date().toLocaleString('zh-CN'); }
+        save(items);
+        render();
+        return;
+      }
+      // 删除
+      const dl = e.target.closest('[data-del]');
+      if (dl) {
+        const cid = dl.dataset.del;
+        if (!confirm('确定删除这条讯息？子回复也会一并删除。')) return;
+        const items = load();
+        // 收集要删除的 id（自己 + 所有后代）
+        const byId = new Map(items.map((c) => [c.id, c]));
+        const toDel = new Set([cid]);
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const c of items) {
+            if (c.parent && toDel.has(c.parent) && !toDel.has(c.id)) { toDel.add(c.id); changed = true; }
+          }
+        }
+        save(items.filter((c) => !toDel.has(c.id)));
+        render();
+        return;
+      }
+    });
+  })();
+</script>
+
+<style>
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0;
+    background: var(--accent);
+    z-index: 60;
+    box-shadow: 0 0 8px var(--glow);
+  }
+  .detail-head {
+    margin-bottom: 24px;
+  }
+  /* 面包屑：始终可见的「← 笔记列表」回退入口，与历史栈解耦 */
+  .detail-crumbs {
+    position: sticky;
+    top: 64px;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    margin: -10px -14px 20px;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .crumb-back {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--accent-color);
+    transition: background 0.2s, color 0.2s;
+  }
+  .crumb-back:hover {
+    background: var(--accent-color);
+    color: var(--bg);
+    text-decoration: none;
+  }
+  .crumb-sep {
+    color: var(--muted);
+    opacity: 0.5;
+  }
+  .crumb-cat {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px dashed var(--border);
+  }
+  .crumb-cat:hover {
+    color: var(--accent);
+    border-color: var(--accent-color);
+    text-decoration: none;
+  }
+  .crumb-title {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .fav-inline {
+    position: static;
+    margin-left: auto;
+  }
+  .detail-head h1 {
+    font-size: clamp(24px, 4vw, 34px);
+    margin: 0 0 10px;
+    line-height: 1.25;
+  }
+  .lead {
+    color: var(--muted);
+    margin: 0 0 12px;
+    font-size: 15px;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .detail-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 32px;
+    align-items: start;
+  }
+  .content {
+    min-width: 0;
+  }
+  .side {
+    border-left: 1px solid var(--border);
+    padding-left: 4px;
+  }
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .pager-link {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 48%;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .pager-link.next {
+    text-align: right;
+    margin-left: auto;
+  }
+  .pager-link b {
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .pager-link:hover {
+    text-decoration: none;
+  }
+  .pager-link:hover b {
+    color: var(--accent);
+  }
+  @media (max-width: 860px) {
+    .detail-body {
+      grid-template-columns: 1fr;
+    }
+    .side {
+      display: none;
+    }
+  }
+  .related { margin-top: 44px; }
+  .related h2 { font-size: 20px; margin: 0 0 16px; }
+  .related .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+
+  /* 系列导航条 */
+  .series-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin-top: 28px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: 13px;
+  }
+  .series-name {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .series-name:hover { text-decoration: none; }
+  .series-pos { color: var(--muted); font-size: 12px; }
+  .series-nav { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-left: auto; }
+  .series-prev, .series-next { color: var(--text); text-decoration: none; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .series-prev:hover, .series-next:hover { color: var(--accent); text-decoration: none; }
+  .series-disabled { color: var(--muted); opacity: 0.6; }
+
+  /* 双链反向链接 */
+  .backlinks { margin-top: 44px; }
+  .backlinks h2 { font-size: 20px; margin: 0 0 16px; }
+  .bl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .bl-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .bl-list a { color: var(--text); text-decoration: none; }
+  .bl-list a:hover { color: var(--accent); text-decoration: none; }
+  .bl-cat { color: var(--muted); font-size: 12px; margin-left: auto; white-space: nowrap; }
+  .giscus { margin-top: 44px; }
+  .giscus h2 { font-size: 20px; margin: 0 0 8px; }
+  .giscus .muted { margin: 0 0 14px; }
+  .has-anchor { position: relative; }
+  .anchor-link {
+    position: absolute;
+    left: -1.1em;
+    top: 0.18em;
+    font-size: 0.72em;
+    color: var(--accent);
+    opacity: 0;
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+  .has-anchor:hover .anchor-link { opacity: 0.75; }
+  .anchor-link:hover { opacity: 1; }
+  .focus-btn {
+    margin-left: auto;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .focus-btn:hover, .focus-btn.on { color: var(--accent-color); border-color: var(--accent-color); }
+  /* 成熟度徽章 + 最后更新时间 */
+  .mat-badge {
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .mat-badge[data-mat='polished'] { color: var(--accent-color); border-color: var(--accent-color); }
+  .mat-badge[data-mat='draft'] { opacity: 0.75; font-style: italic; }
+  .upd { color: var(--muted); font-size: 13px; }
+</style>
+
+<script>
+  const bar = document.getElementById('progress');
+  const art = document.querySelector('.detail');
+  function update() {
+    if (!bar || !art) return;
+    const h = art.getBoundingClientRect().height - window.innerHeight;
+    const scrolled = Math.min(Math.max(-art.getBoundingClientRect().top + 80, 0), h);
+    const pct = h > 0 ? (scrolled / h) * 100 : 0;
+    bar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+</script>
+
+<script>
+  // 分享栏：复制链接 / 微博 / X / 微信二维码
+  (function () {
+    const bar = document.querySelector('.share-bar');
+    if (!bar) return;
+    const url = location.href;
+    const title = document.title;
+    const enc = encodeURIComponent;
+
+    const copyText = async (t) => {
+      try {
+        await navigator.clipboard.writeText(t);
+        return true;
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = t;
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (_) {}
+        ta.remove();
+        return ok;
+      }
+    };
+
+    const toast = (msg) => {
+      let t = document.querySelector('.share-toast');
+      if (!t) {
+        t = document.createElement('div');
+        t.className = 'share-toast';
+        document.body.appendChild(t);
+      }
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove('show'), 1800);
+    };
+
+    const openWechat = (u) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'qr-overlay';
+      overlay.innerHTML =
+        '<div class="qr-box">' +
+        '<button class="qr-close" aria-label="关闭">×</button>' +
+        '<p class="qr-tip">扫码或复制链接，分享到微信</p>' +
+        '<img class="qr-img" alt="微信分享二维码" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + enc(u) + '">' +
+        '<p class="qr-url" style="display:none"></p>' +
+        '</div>';
+      const img = overlay.querySelector('.qr-img');
+      const urlP = overlay.querySelector('.qr-url');
+      urlP.textContent = u;
+      img.addEventListener('error', () => {
+        img.style.display = 'none';
+        urlP.style.display = 'block';
+      });
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay || e.target.classList.contains('qr-close')) overlay.remove();
+      });
+      document.body.appendChild(overlay);
+    };
+
+    bar.querySelectorAll('.share-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const type = btn.dataset.share;
+        if (type === 'copy') {
+          const ok = await copyText(url);
+          toast(ok ? '链接已复制 ✓' : '复制失败，请手动复制');
+          if (ok) { btn.classList.add('copied'); setTimeout(() => btn.classList.remove('copied'), 1400); }
+        } else if (type === 'weibo') {
+          window.open('https://service.weibo.com/share/share.php?url=' + enc(url) + '&title=' + enc(title), '_blank', 'noopener');
+        } else if (type === 'twitter') {
+          window.open('https://twitter.com/intent/tweet?url=' + enc(url) + '&text=' + enc(title), '_blank', 'noopener');
+        } else if (type === 'wechat') {
+          openWechat(url);
+        } else if (type === 'print') {
+          // 打印 / 另存为 PDF：global.css 的 @media print 已隐藏背景/导航/侧栏
+          window.print();
+        } else if (type === 'offline') {
+          // 主动写入 Service Worker 缓存，确保断网后仍可读本篇
+          (async () => {
+            try {
+              const cache = await caches.open('offline-user');
+              await cache.add(location.pathname);
+              toast('已保存到离线 ✓');
+              btn.classList.add('copied');
+              setTimeout(() => btn.classList.remove('copied'), 1400);
+            } catch (e) {
+              toast('保存失败，可能不支持离线缓存');
+            }
+          })();
+        }
+      });
+    });
+  })();
+</script>
+
+<script>
+  // 锚点一键复制：给正文 h2/h3 生成 id + 悬浮 # 按钮
+  (function () {
+    const content = document.querySelector('.content');
+    if (!content) return;
+    const heads = content.querySelectorAll('h2, h3');
+    let n = 0;
+    const slugify = (t) =>
+      t.trim().toLowerCase().replace(/[^\w一-龥]+/g, '-').replace(/^-+|-+$/g, '') || 'h';
+    heads.forEach((h) => {
+      if (!h.id) h.id = slugify(h.textContent) + '-' + ++n;
+      h.classList.add('has-anchor');
+      const a = document.createElement('a');
+      a.className = 'anchor-link';
+      a.href = '#' + h.id;
+      a.textContent = '#';
+      a.setAttribute('aria-label', '复制锚点链接');
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const link = location.origin + location.pathname + '#' + h.id;
+        if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => {
+          a.textContent = '✓';
+          setTimeout(() => (a.textContent = '#'), 1200);
+        }).catch(() => {});
+        history.replaceState(null, '', '#' + h.id);
+      });
+      h.appendChild(a);
+    });
+
+    // 专注阅读模式按钮（文章页）
+    const fb = document.getElementById('focus-toggle');
+    if (fb) {
+      const sync = () => {
+        const on = document.documentElement.getAttribute('data-focus') === 'on';
+        fb.classList.toggle('on', on);
+        fb.textContent = on ? '退出专注' : '专注阅读';
+      };
+      sync();
+      fb.addEventListener('click', () => {
+        window.__setFocus(document.documentElement.getAttribute('data-focus') !== 'on');
+        sync();
+      });
+      new MutationObserver(sync).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-focus'],
+      });
+    }
+
+    // 专注阅读正文对齐切换（居左 ↔ 居中，默认居左）
+    const fab = document.getElementById('focus-align-toggle');
+    if (fab) {
+      const setAlign = (v) => {
+        if (window.__setFocusAlign) window.__setFocusAlign(v);
+        else {
+          const a = v === 'center' ? 'center' : 'left';
+          document.documentElement.setAttribute('data-focus-align', a);
+          try { localStorage.setItem('focus_align', a); } catch (e) {}
+        }
+      };
+      const getAlign = () =>
+        document.documentElement.getAttribute('data-focus-align') ||
+        (localStorage.getItem('focus_align') === 'center' ? 'center' : 'left');
+      const syncAlign = () => {
+        const a = getAlign();
+        fab.textContent = a === 'center' ? '正文居中' : '正文居左';
+        fab.classList.toggle('on', a === 'center');
+      };
+      syncAlign();
+      fab.addEventListener('click', () => {
+        setAlign(getAlign() === 'center' ? 'left' : 'center');
+        syncAlign();
+      });
+    }
+  })();
+</script>

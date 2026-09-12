@@ -1,0 +1,478 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const skins = [
+  { id: 'cosmic', name: '星空·星海征途', c1: '#5eead4', c2: '#8b5cf6' },
+  { id: 'ink', name: '古风·墨剑江湖', c1: '#b23b2e', c2: '#2f4858' },
+  { id: 'cyber', name: '科技·赛博战甲', c1: '#00f0ff', c2: '#ff2e88' },
+  { id: 'xianxia', name: '玄幻·灵蕴修真', c1: '#8b5cf6', c2: '#f59e0b' },
+  { id: 'minimal', name: '极简·素白', c1: '#3b82f6', c2: '#6366f1' },
+];
+const bgModes = {
+  cosmic: [['star', '星点'], ['galaxy', '银河'], ['meteor', '流星雨'], ['pixel', '像素星空'], ['constellation', '星座连线'], ['nebula', '星云'], ['float', '悬浮光块']],
+  cyber: [['grid', '网格扫描'], ['matrix', '矩阵雨'], ['holo', '全息脉冲'], ['circuit', '电路走线'], ['hex', '六边形'], ['float', '悬浮光块']],
+  xianxia: [['qi', '灵气上浮'], ['rune', '符文法阵'], ['lotus', '莲华绽放'], ['poem', '文字浮现'], ['xiangyun', '祥云云雾'], ['constellation', '星座连线']],
+  ink: [['ink', '墨晕扩散'], ['landscape', '山水长卷'], ['petals', '飞花'], ['inkdot', '点墨飞溅'], ['brush', '毛笔挥毫'], ['xiangyun', '祥云'], ['yinzhang', '印章'], ['poem', '文字浮现'], ['guwen', '古文古诗']],
+  minimal: [['dust', '浮尘'], ['line', '粒子线'], ['float', '悬浮光块']],
+};
+---
+
+<BaseLayout title="舰长控制台 · fight-1">
+  <h1>🛰 舰长控制台</h1>
+  <p class="muted">舰长 fight-1 的私人控制台：外观定制、探索成就与航行设置。</p>
+
+  <section class="panel">
+    <h2>外观定制</h2>
+    <p class="sub">选择你的战甲皮肤与背景动态。</p>
+    <div class="cskin-grid">
+      {skins.map((s) => (
+        <button class="cskin-opt" data-skin-set={s.id} title={s.name}>
+          <span class="sw" style={`background:linear-gradient(135deg, ${s.c1}, ${s.c2})`}></span>
+          <span class="nm">{s.name}</span>
+        </button>
+      ))}
+    </div>
+    <p class="sub" style="margin-top:14px">背景动态</p>
+    <div class="cbg-modes">
+      {Object.entries(bgModes).map(([skin, modes]) => (
+        <div class="cbg-group" data-bg-group={skin} hidden>
+          {modes.map(([id, label]) => (
+            <button class="cbg-opt" data-bg-set={id}>{label}</button>
+          ))}
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>🎨 配色工坊</h2>
+    <p class="sub">预设按当前明暗自动调节亮度，任何皮肤下都保持协调与可读；也可直接用色轮自定义主色 / 副色。</p>
+
+    <p class="sub-t">配色预设</p>
+    <div class="cpal-grid">
+      {[
+        { id: 'default', name: '跟随皮肤' },
+        { id: 'forest', name: '森林', c1: '#3f9e6a', c2: '#2f7d55' },
+        { id: 'ocean', name: '海洋', c1: '#2b93c8', c2: '#3b6fd4' },
+        { id: 'amber', name: '琥珀', c1: '#d98a1f', c2: '#c26216' },
+        { id: 'crimson', name: '绛红', c1: '#c24557', c2: '#8f3f7a' },
+        { id: 'violet', name: '紫罗兰', c1: '#8b5cf6', c2: '#a855b7' },
+      ].map((p) => (
+        <button class="cpal-opt" data-pal-set={p.id} title={p.name}>
+          <span
+            class="csw"
+            style={p.c1 ? `background:linear-gradient(135deg, ${p.c1}, ${p.c2})` : 'background:conic-gradient(#5eead4,#8b5cf6,#f59e0b,#10b981,#06b6d4,#5eead4)'}
+          ></span>
+          <span class="cnm">{p.name}</span>
+        </button>
+      ))}
+    </div>
+
+    <p class="sub-t">色轮自定义</p>
+    <div class="cwheel">
+      <label class="crow">
+        <span class="clab">主色</span>
+        <span class="cdesc">按钮、链接、高亮、辉光</span>
+        <input type="color" data-pal-color="accent" value="#5eead4" aria-label="主色" />
+        <code class="chex" data-pal-hex="accent">#5EEAD4</code>
+      </label>
+      <label class="crow">
+        <span class="clab">副色</span>
+        <span class="cdesc">渐变尾端、次级强调</span>
+        <input type="color" data-pal-color="accent2" value="#8b5cf6" aria-label="副色" />
+        <code class="chex" data-pal-hex="accent2">#8B5CF6</code>
+      </label>
+      <div class="cwheel-foot">
+        <button class="creset" data-pal-reset type="button">↺ 跟随皮肤原色</button>
+        <span class="chint">改动即时生效，并记忆到本机</span>
+      </div>
+      <div class="ctools">
+        <button class="ctool" data-pal-random type="button">🎲 随机配色</button>
+        <button class="ctool" data-pal-export type="button">⤓ 导出</button>
+        <button class="ctool" data-pal-import type="button">⤒ 导入</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>探索成就</h2>
+    <p class="sub">记录你的星际互动行为，解锁对应徽章。</p>
+    <div class="console-grid" data-badges></div>
+  </section>
+
+  <section class="panel">
+    <h2>航行设置</h2>
+    <label class="setting">
+      <input type="checkbox" id="cursor-toggle" />
+      <span>活体光标 + 粒子拖尾（关闭后恢复系统鼠标指针）</span>
+    </label>
+    <label class="setting">
+      <input type="checkbox" id="typing-toggle" />
+      <span>文章逐行浮现（跃迁打字机）</span>
+    </label>
+    <label class="setting">
+      <input type="checkbox" id="force-toggle" />
+      <span>粒子力场（鼠标排斥 / 吸引）</span>
+    </label>
+    <label class="setting">
+      <input type="checkbox" id="force-attract" />
+      <span>力场模式：吸引（默认排斥）</span>
+    </label>
+    <label class="setting">
+      <input type="checkbox" id="fx-click-toggle" />
+      <span>鼠标点击动效（涟漪 / 粒子）</span>
+    </label>
+    <label class="setting">
+      <input type="checkbox" id="comments-toggle" />
+      <span>评论区（GitHub Discussions，需可访问 giscus.app 才能加载）</span>
+    </label>
+    <label class="setting">
+      <input type="checkbox" id="focus-toggle" />
+      <span>专注阅读模式（隐藏背景动效、加宽正文，长文更沉浸）</span>
+    </label>
+    <label class="setting setting-row">
+      <span>专注阅读正文对齐</span>
+      <select id="focus-align" aria-label="专注阅读正文对齐">
+        <option value="left">居左（默认）</option>
+        <option value="center">居中</option>
+      </select>
+    </label>
+    <p class="sub">系统开启"减少动态效果"时，全站动效会自动降级为静态排版。</p>
+  </section>
+
+  <section class="panel">
+    <h2>📖 阅读设置</h2>
+    <p class="sub">调节文章正文的字号、行距与字重，即时生效并记忆到本机（只作用于文章正文）。</p>
+
+    <!-- 实时预览：与文章正文共用同一套 CSS 变量，拖动滑杆即可看到真实效果 -->
+    <div class="read-preview">
+      <div class="rp-bar">
+        <span class="rp-t">实时预览</span>
+        <span class="rp-meta" id="read-preview-meta">16px · 1.8 · 400</span>
+      </div>
+      <div class="rp-body content">
+        <h3>示例：上下文压缩的三个抓手</h3>
+        <p>
+          长对话里最贵的往往不是模型调用，而是<strong>上下文本身</strong>。把历史按
+          「事实 / 决策 / 待办」分层压缩，通常能省下可观的 token，又不丢关键结论。
+        </p>
+        <blockquote>真正省 token 的不是删掉内容，而是让同样的 token 承载更高的信息密度。</blockquote>
+        <p>工程上建议先做 <code>摘要 → 检索</code> 两段式，再考虑引入向量召回。</p>
+      </div>
+    </div>
+
+    <label class="read-row">
+      <span class="read-lab">字号</span>
+      <input type="range" id="read-size" min="14" max="22" step="1" value="16" aria-label="正文字号" />
+      <output class="read-val" id="read-size-val">16px</output>
+    </label>
+    <label class="read-row">
+      <span class="read-lab">行距</span>
+      <input type="range" id="read-lh" min="1.4" max="2.4" step="0.1" value="1.8" aria-label="正文行距" />
+      <output class="read-val" id="read-lh-val">1.8</output>
+    </label>
+    <label class="read-row">
+      <span class="read-lab">字重</span>
+      <input type="range" id="read-weight" min="300" max="600" step="100" value="400" aria-label="正文字重" />
+      <output class="read-val" id="read-weight-val">400</output>
+    </label>
+    <div class="cwheel-foot">
+      <button class="creset" id="read-reset" type="button">↺ 恢复默认</button>
+      <span class="chint">改动即时生效，并记忆到本机</span>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .muted { color: var(--muted); margin-top: 0; }
+  .panel {
+    margin-top: 22px; padding: 16px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .panel h2 { font-size: 16px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+  .cskin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 10px; }
+  .cskin-opt {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 10px; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface-2); color: var(--text); cursor: pointer; font-family: inherit;
+  }
+  .cskin-opt .sw { width: 100%; height: 34px; border-radius: 8px; }
+  .cskin-opt .nm { font-size: 12px; }
+  .cskin-opt:hover { border-color: var(--accent-color); }
+  .cbg-modes { display: block; }
+  .cbg-group { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .cbg-group[hidden] { display: none; }
+  .cbg-opt {
+    padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--muted); font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .cbg-opt.is-active { border-color: var(--accent-color); color: var(--accent-color); }
+  .setting { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .setting-row { justify-content: space-between; }
+  .setting-row select {
+    padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--text);
+    font-size: 13px; font-family: inherit; cursor: pointer;
+  }
+  .setting-row select:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 1px; }
+  /* 阅读设置滑杆 */
+  .read-row {
+    display: grid;
+    grid-template-columns: 48px 1fr 56px;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 0;
+    font-size: 13px;
+  }
+  .read-lab { color: var(--muted); }
+  .read-row input[type='range'] { width: 100%; accent-color: var(--accent-color); cursor: pointer; }
+  .read-val {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text);
+  }
+  /* 阅读设置实时预览（与文章正文共用 CSS 变量） */
+  .read-preview {
+    margin: 4px 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+  .rp-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .rp-meta { font-family: var(--font-mono); color: var(--accent-color); }
+  .rp-body {
+    padding: 14px 16px;
+    /* 字号/行距/字重由 .content 上的 CSS 变量控制 */
+  }
+  .rp-body h3 { margin: 0 0 10px; font-size: 1.15em; font-weight: 700; }
+  .rp-body p { margin: 0 0 10px; }
+  .rp-body blockquote {
+    margin: 0 0 10px;
+    padding: 6px 0 6px 12px;
+    border-left: 3px solid var(--accent-color);
+    color: var(--muted);
+    font-style: italic;
+  }
+  .rp-body code {
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: var(--surface);
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  /* 配色工坊 */
+  .sub-t { font-size: 12px; color: var(--text); opacity: .8; margin: 16px 0 8px; font-weight: 600; }
+  .cpal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .cpal-opt {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 8px 6px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface-2); color: var(--text); cursor: pointer; font-family: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .cpal-opt:hover { border-color: var(--accent-color); }
+  .cpal-opt.is-active { border-color: var(--accent-color); box-shadow: 0 0 0 1px var(--accent-color) inset; }
+  .cpal-opt .csw { width: 100%; height: 26px; border-radius: 6px; }
+  .cpal-opt .cnm { font-size: 11px; }
+  .cwheel { display: flex; flex-direction: column; gap: 10px; }
+  .crow {
+    display: grid; grid-template-columns: 40px 1fr 44px 78px;
+    align-items: center; gap: 10px;
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface-2); cursor: pointer;
+  }
+  .clab { font-size: 13px; font-weight: 600; }
+  .cdesc { font-size: 11px; color: var(--muted); }
+  .crow input[type='color'] {
+    width: 44px; height: 28px; padding: 0; justify-self: center;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: transparent; cursor: pointer;
+    -webkit-appearance: none; appearance: none;
+  }
+  .crow input[type='color']::-webkit-color-swatch-wrapper { padding: 2px; }
+  .crow input[type='color']::-webkit-color-swatch { border: none; border-radius: 4px; }
+  .chex {
+    font-family: var(--font-mono); font-size: 11px; text-align: center;
+    color: var(--text); opacity: .8;
+    background: var(--surface); border-radius: 5px; padding: 3px 4px;
+  }
+  .cwheel-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .creset {
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--text);
+    font-size: 12px; font-family: inherit; padding: 6px 10px; cursor: pointer;
+  }
+  .creset:hover:not(:disabled) { border-color: var(--accent-color); color: var(--accent-color); }
+  .creset:disabled { opacity: .4; cursor: default; }
+  .chint { font-size: 11px; color: var(--muted); }
+  .ctools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .ctool {
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--text);
+    font-size: 12px; font-family: inherit; padding: 6px 10px; cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .ctool:hover { border-color: var(--accent-color); color: var(--accent-color); }
+  .ctool:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 1px; }
+  @media (max-width: 560px) {
+    .crow { grid-template-columns: 36px 1fr 40px; }
+    .crow .cdesc { display: none; }
+  }
+</style>
+
+<script>
+  import { renderBadges } from '../scripts/console.js';
+  import { initPalette, syncUI } from '../scripts/palette.js';
+  const box = document.querySelector('[data-badges]');
+  renderBadges(box);
+  document.addEventListener('badge:unlocked', () => renderBadges(box));
+
+  // 背景模式初始显隐（与导航栏战甲面板一致）
+  const root = document.documentElement;
+  const syncBg = () => {
+    const skin = root.getAttribute('data-skin') || 'cosmic';
+    document.querySelectorAll('[data-bg-group]').forEach((g) => {
+      g.hidden = g.getAttribute('data-bg-group') !== skin;
+    });
+  };
+  syncBg();
+  document.querySelectorAll('[data-skin-set]').forEach((b) =>
+    b.addEventListener('click', () => setTimeout(() => { syncBg(); syncUI(); }, 0))
+  );
+
+  // 配色工坊（与导航战甲面板共享同一份状态）
+  initPalette();
+
+  // 逐行浮现开关
+  const tg = document.getElementById('typing-toggle');
+  tg.checked = localStorage.getItem('warp_typing') !== 'off';
+  tg.addEventListener('change', () => {
+    localStorage.setItem('warp_typing', tg.checked ? 'on' : 'off');
+  });
+
+  // 活体光标开关（立即生效，无需刷新）
+  const ct = document.getElementById('cursor-toggle');
+  ct.checked = localStorage.getItem('live_cursor') !== 'off';
+  ct.addEventListener('change', () => {
+    localStorage.setItem('live_cursor', ct.checked ? 'on' : 'off');
+    document.dispatchEvent(new CustomEvent('cursor:toggle', { detail: ct.checked }));
+  });
+
+  // 动态交互开关：粒子力场（排斥/吸引/关）、点击动效（开/关）
+  const ft = document.getElementById('force-toggle');
+  const fa = document.getElementById('force-attract');
+  const fk = document.getElementById('fx-click-toggle');
+  function reflectForceUI() {
+    const v = root.getAttribute('data-bg-force') || 'repel';
+    ft.checked = v !== 'off';
+    fa.checked = v === 'attract';
+    fk.checked = (root.getAttribute('data-bg-click') || 'on') !== 'off';
+  }
+  function applyForce() {
+    const v = ft.checked ? (fa.checked ? 'attract' : 'repel') : 'off';
+    root.setAttribute('data-bg-force', v);
+    try { localStorage.setItem('bg_force', v); } catch (e) {}
+    reflectForceUI();
+  }
+  function applyClick() {
+    const v = fk.checked ? 'on' : 'off';
+    root.setAttribute('data-bg-click', v);
+    try { localStorage.setItem('bg_click', v); } catch (e) {}
+  }
+  ft.addEventListener('change', applyForce);
+  fa.addEventListener('change', applyForce);
+  fk.addEventListener('change', applyClick);
+  reflectForceUI();
+
+  // 评论区开关（默认关，开启后文章页懒加载 giscus）
+  const cmt = document.getElementById('comments-toggle');
+  cmt.checked = (localStorage.getItem('comments') || 'off') === 'on';
+  cmt.addEventListener('change', () => {
+    const v = cmt.checked ? 'on' : 'off';
+    try { localStorage.setItem('comments', v); } catch (e) {}
+    root.setAttribute('data-comments', v);
+  });
+
+  // 专注阅读模式
+  const fz = document.getElementById('focus-toggle');
+  if (fz) {
+    fz.checked = (localStorage.getItem('focus') || 'off') === 'on';
+    fz.addEventListener('change', () => {
+      if (window.__setFocus) window.__setFocus(fz.checked);
+      else {
+        root.setAttribute('data-focus', fz.checked ? 'on' : 'off');
+        try { localStorage.setItem('focus', fz.checked ? 'on' : 'off'); } catch (e) {}
+      }
+    });
+  }
+
+  // 专注阅读正文对齐：居左（默认）/ 居中
+  const faSel = document.getElementById('focus-align');
+  if (faSel) {
+    const cur = () => (window.__getFocusAlign ? window.__getFocusAlign() : (localStorage.getItem('focus_align') === 'center' ? 'center' : 'left'));
+    faSel.value = cur();
+    faSel.addEventListener('change', () => {
+      if (window.__setFocusAlign) window.__setFocusAlign(faSel.value);
+      else {
+        const a = faSel.value === 'center' ? 'center' : 'left';
+        root.setAttribute('data-focus-align', a);
+        try { localStorage.setItem('focus_align', a); } catch (e) {}
+      }
+    });
+  }
+
+  // 阅读设置：正文 字号 / 行距 / 字重（写 CSS 变量，即时生效）
+  const rSize = document.getElementById('read-size');
+  const rLh = document.getElementById('read-lh');
+  const rW = document.getElementById('read-weight');
+  if (rSize && rLh && rW) {
+    const DEF = { size: 16, lh: 1.8, weight: 400 };
+    const out = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const applyRead = () => {
+      const size = +rSize.value || DEF.size;
+      const lh = +rLh.value || DEF.lh;
+      const w = +rW.value || DEF.weight;
+      root.style.setProperty('--read-font-size', size + 'px');
+      root.style.setProperty('--read-line-height', String(lh));
+      root.style.setProperty('--read-weight', String(w));
+      out('read-size-val', size + 'px');
+      out('read-lh-val', String(lh));
+      out('read-weight-val', String(w));
+      const meta = document.getElementById('read-preview-meta');
+      if (meta) meta.textContent = size + 'px · ' + lh + ' · ' + w;
+      try {
+        localStorage.setItem('read_size', String(size));
+        localStorage.setItem('read_lh', String(lh));
+        localStorage.setItem('read_weight', String(w));
+      } catch (e) {}
+    };
+    rSize.value = localStorage.getItem('read_size') || DEF.size;
+    rLh.value = localStorage.getItem('read_lh') || DEF.lh;
+    rW.value = localStorage.getItem('read_weight') || DEF.weight;
+    [rSize, rLh, rW].forEach((el) => el.addEventListener('input', applyRead));
+    const rr = document.getElementById('read-reset');
+    if (rr) {
+      rr.addEventListener('click', () => {
+        rSize.value = DEF.size;
+        rLh.value = DEF.lh;
+        rW.value = DEF.weight;
+        applyRead();
+      });
+    }
+    applyRead();
+  }
+</script>

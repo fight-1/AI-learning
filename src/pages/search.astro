@@ -1,0 +1,212 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="搜索 · fight-1 的 AI 学习笔记" description="站内全文搜索，基于 Pagefind 中文索引，支持分类/标签分面筛选">
+  <h1>搜索</h1>
+  <input id="q" class="search-input" type="search" placeholder="输入关键词，全文检索标题 / 正文 / 标签…" autofocus />
+  <div class="facets" id="facets" hidden>
+    <div class="facet-group" id="facet-cat"></div>
+    <div class="facet-group" id="facet-tag"></div>
+  </div>
+  <p id="stat" class="muted"></p>
+  <div id="results" class="results"></div>
+</BaseLayout>
+
+<style>
+  h1 { font-size: 26px; margin: 0 0 14px; }
+  .search-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .muted { color: var(--muted); font-size: 13px; margin: 10px 0; }
+
+  /* 分面筛选 */
+  .facets { margin: 12px 0 4px; display: flex; flex-direction: column; gap: 8px; }
+  .facet-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .facet-group::before {
+    content: attr(data-label);
+    font-size: 12px;
+    color: var(--muted);
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+  .chip .n { opacity: 0.6; margin-left: 3px; font-size: 11px; }
+
+  .results { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+  .item {
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .item a { color: var(--text); font-size: 16px; font-weight: 600; }
+  .item a:hover { color: var(--accent); text-decoration: none; }
+  .item .s { color: var(--muted); font-size: 13px; margin: 6px 0; line-height: 1.6; }
+  .item .c { font-size: 12px; color: var(--accent-2); }
+  mark { background: var(--glow); color: var(--text); border-radius: 3px; padding: 0 2px; }
+
+  .empty-box {
+    margin-top: 8px;
+    padding: 28px 22px;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .empty-box .eb-t { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+  .empty-box .eb-s { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .empty-box a { color: var(--accent); }
+</style>
+
+<script is:inline type="module">
+  const q = document.getElementById('q');
+  const results = document.getElementById('results');
+  const stat = document.getElementById('stat');
+  const facetsBox = document.getElementById('facets');
+  const facetCat = document.getElementById('facet-cat');
+  const facetTag = document.getElementById('facet-tag');
+  let pagefind = null;
+  let metaMap = new Map(); // url -> {category, tags}
+  const cats = new Set();
+  const tagCount = new Map();
+  const activeCat = new Set();
+  const activeTag = new Set();
+
+  async function init() {
+    try {
+      const idx = await (await fetch('/search.json')).json();
+      idx.forEach((n) => {
+        metaMap.set(n.url, n);
+        if (n.category) cats.add(n.category);
+        (n.tags || []).forEach((t) => tagCount.set(t, (tagCount.get(t) || 0) + 1));
+      });
+      buildFacets();
+      facetsBox.hidden = false;
+    } catch (e) {}
+    try {
+      pagefind = await import(/* @vite-ignore */ '/pagefind/pagefind.js');
+      await pagefind.options({ excerptLength: 30 });
+    } catch (e) {
+      results.innerHTML =
+        '<p class="muted">搜索索引正在生成中（构建后才会生效）。请稍候重新部署后再试，或先用顶部「笔记」页按分类/标签筛选。</p>';
+    }
+  }
+
+  function buildFacets() {
+    const catList = [...cats].sort();
+    facetCat.setAttribute('data-label', '分类');
+    facetCat.innerHTML = catList
+      .map((c) => `<button type="button" class="chip" data-cat="${c}">${c}</button>`)
+      .join('');
+    const tagList = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 14);
+    facetTag.setAttribute('data-label', '标签');
+    facetTag.innerHTML = tagList
+      .map(([t, n]) => `<button type="button" class="chip" data-tag="${t}">#${t}<span class="n">${n}</span></button>`)
+      .join('');
+    facetCat.querySelectorAll('[data-cat]').forEach((b) =>
+      b.addEventListener('click', () => toggle(activeCat, b.dataset.cat, b))
+    );
+    facetTag.querySelectorAll('[data-tag]').forEach((b) =>
+      b.addEventListener('click', () => toggle(activeTag, b.dataset.tag, b))
+    );
+  }
+
+  function toggle(set, key, el) {
+    if (set.has(key)) set.delete(key);
+    else set.add(key);
+    el.classList.toggle('on', set.has(key));
+    reSearch();
+  }
+
+  const esc = (s) =>
+    String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function applyFacets(list) {
+    return list.filter((d) => {
+      const m = metaMap.get(d.url) || {};
+      if (activeCat.size && !(m.category && activeCat.has(m.category))) return false;
+      if (activeTag.size) {
+        const ts = m.tags || [];
+        let ok = false;
+        activeTag.forEach((t) => {
+          if (ts.includes(t)) ok = true;
+        });
+        if (!ok) return false;
+      }
+      return true;
+    });
+  }
+
+  let lastTerm = '';
+  function render(list, term) {
+    const filtered = applyFacets(list);
+    if (!term) {
+      stat.textContent = '输入关键词开始搜索';
+      results.innerHTML =
+        '<div class="empty-box"><p class="eb-t">🔭 输入关键词开始检索</p>' +
+        '<p class="eb-s">试试「MCP」「Agent 编排」「Token 优化」…</p></div>';
+      return;
+    }
+    if (!filtered.length) {
+      stat.textContent = '没有命中结果';
+      results.innerHTML =
+        '<div class="empty-box"><p class="eb-t">🛰️ 没有找到「' + esc(term) + '」</p>' +
+        '<p class="eb-s">换个更短的关键词试试，或去 <a href="/notes">笔记列表</a>、<a href="/tags">标签云</a> 逛逛。</p></div>';
+      return;
+    }
+    stat.textContent = `命中 ${filtered.length} 篇` + (list.length !== filtered.length ? `（分面筛选自 ${list.length}）` : '');
+    results.innerHTML = filtered
+      .map(
+        (d) => `
+      <div class="item">
+        <a href="${d.url}">${d.meta.title || d.url}</a>
+        <div class="s">${d.excerpt || ''}</div>
+      </div>`
+      )
+      .join('');
+  }
+
+  let timer;
+  let curList = [];
+  async function reSearch() {
+    render(curList, lastTerm);
+  }
+  async function search(term) {
+    term = term.trim();
+    lastTerm = term;
+    if (!pagefind) return;
+    if (!term) {
+      curList = [];
+      render([], '');
+      return;
+    }
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      try {
+        const res = await pagefind.search(term);
+        const data = await Promise.all(res.results.slice(0, 24).map((r) => r.data()));
+        curList = data;
+        render(data, term);
+      } catch (e) {
+        stat.textContent = '搜索出错，请重试';
+      }
+    }, 120);
+  }
+
+  q.addEventListener('input', () => search(q.value));
+  init();
+  const p = new URLSearchParams(location.search);
+  if (p.get('q')) {
+    q.value = p.get('q');
+    search(q.value);
+  }
+</script>
