@@ -68,9 +68,13 @@ npm run dev        # 本地开发 http://localhost:4321
 npm run build      # 构建到 dist/
 npm run preview    # 预览构建产物
 npm run og         # 为文章重新生成 OG 分享图（需 Pillow：pip install Pillow）
+
+npm run new -- "文章标题" --category=Agent --slug=english-name   # 新建文章脚手架
+npm run release -- "提交信息"                                     # 一键发布：OG→构建→查死链→提交→推送
 ```
 
 > 新增或修改了文章的标题/摘要后，**记得跑一次 `npm run og`**，否则分享卡片会回退到默认图。
+> 想省事就直接 `npm run release -- "说明"`，它会自动串起 OG 生成、构建、死链检查、提交与推送。
 
 写文章：在 `src/content/notes/<分类>/<短名>.md` 写 frontmatter 即可，
 字段见下方「文档」中的用户手册。`draft: true` 的文章不会发布，只出现在 `/drafts`。

@@ -10,7 +10,9 @@
     "astro": "astro",
     "astro:check": "astro check",
     "og": "python scripts/gen-og.py",
-    "check:links": "node scripts/check-links.mjs"
+    "check:links": "node scripts/check-links.mjs",
+    "new": "node scripts/new-note.mjs",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.2.0",
