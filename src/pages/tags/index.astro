@@ -16,12 +16,15 @@ const tags = uniqueTags(notes)
 ---
 
 <BaseLayout title="标签 · fight-1">
-  <h1>标签星轨</h1>
-  <p class="muted">标签即星轨：拨动星轨发现跨界内容。切换下方视图。</p>
+  <div class="page-head">
+    <h1>标签星轨</h1>
+    <span class="count">{tags.length} 个标签</span>
+  </div>
+  <p class="page-sub">标签即星轨：拨动星轨发现跨界内容。</p>
 
-  <div class="view-switch">
-    <button class="seg active" data-view="cloud">文字云</button>
-    <button class="seg" data-view="orbits">引力星轨</button>
+  <div class="view-bar" role="group" aria-label="视图切换">
+    <button type="button" class="on" data-view="cloud" aria-pressed="true">☁ 文字云</button>
+    <button type="button" data-view="orbits" aria-pressed="false">✦ 引力星轨</button>
   </div>
 
   <div class="cloud" data-panel="cloud">
@@ -37,13 +40,8 @@ const tags = uniqueTags(notes)
 </BaseLayout>
 
 <style>
-  h1 { font-size: 26px; margin: 0 0 6px; }
-  .muted { color: var(--muted); margin-top: 0; }
-  .view-switch { display: flex; gap: 8px; margin: 14px 0; }
-  .seg { padding: 6px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
-  .seg.active { border-color: var(--accent-color); color: var(--accent-color); box-shadow: 0 0 10px var(--glow); }
   .cloud { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-  .chip b { color: var(--accent); }
+  .cloud .chip b { color: var(--accent); }
   .orbits-wrap { position: relative; margin-top: 10px; }
   .orbits-canvas { width: 100%; height: 60vh; display: block; border: 1px solid var(--border); border-radius: 14px; background: radial-gradient(circle at 50% 50%, rgba(0,0,0,.25), transparent 70%); }
   .hint { color: var(--muted); font-size: 12px; text-align: center; margin-top: 8px; }
@@ -51,12 +49,16 @@ const tags = uniqueTags(notes)
 
 <script>
   import { initOrbits } from '../../scripts/orbits.js';
-  const btns = document.querySelectorAll('.seg');
-  const panels = document.querySelectorAll('[data-panel]');
+  const btns = document.querySelectorAll<HTMLButtonElement>('[data-view]');
+  const panels = document.querySelectorAll<HTMLElement>('[data-panel]');
   let orbitsReady = false;
   btns.forEach((b) =>
     b.addEventListener('click', async () => {
-      btns.forEach((x) => x.classList.toggle('active', x === b));
+      btns.forEach((x) => {
+        const on = x === b;
+        x.classList.toggle('on', on);
+        x.setAttribute('aria-pressed', String(on));
+      });
       const v = b.dataset.view;
       panels.forEach((p) => (p.hidden = p.dataset.panel !== v));
       if (v === 'orbits' && !orbitsReady) {

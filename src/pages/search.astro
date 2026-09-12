@@ -39,24 +39,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     margin-right: 4px;
     flex-shrink: 0;
   }
-  .fchip {
-    padding: 3px 11px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--muted);
-    font-size: 12px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
-  }
-  .fchip:hover { color: var(--accent); border-color: var(--accent); }
-  .fchip.on {
-    color: var(--accent-color);
-    border-color: var(--accent-color);
-    background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
-  }
-  .fchip .n { opacity: 0.6; margin-left: 3px; font-size: 11px; }
+  .chip .n { opacity: 0.6; margin-left: 3px; font-size: 11px; }
 
   .results { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
   .item {
@@ -122,12 +105,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const catList = [...cats].sort();
     facetCat.setAttribute('data-label', '分类');
     facetCat.innerHTML = catList
-      .map((c) => `<button type="button" class="fchip" data-cat="${c}">${c}</button>`)
+      .map((c) => `<button type="button" class="chip" data-cat="${c}">${c}</button>`)
       .join('');
     const tagList = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 14);
     facetTag.setAttribute('data-label', '标签');
     facetTag.innerHTML = tagList
-      .map(([t, n]) => `<button type="button" class="fchip" data-tag="${t}">#${t}<span class="n">${n}</span></button>`)
+      .map(([t, n]) => `<button type="button" class="chip" data-tag="${t}">#${t}<span class="n">${n}</span></button>`)
       .join('');
     facetCat.querySelectorAll('[data-cat]').forEach((b) =>
       b.addEventListener('click', () => toggle(activeCat, b.dataset.cat, b))

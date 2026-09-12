@@ -3,8 +3,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="我的摘录 · fight-1" description="本机保存的文章摘录（localStorage，不上传服务器）" noindex={true}>
-  <h1 class="cl-title">我的摘录</h1>
-  <p class="cl-sub">这些摘录只存在你这台浏览器（localStorage），<strong>不上传服务器</strong>。在任意文章里选中正文文字，点浮出的「📌 摘录」即可收藏。</p>
+  <div class="page-head">
+    <h1>我的摘录</h1>
+  </div>
+  <p class="page-sub">这些摘录只存在你这台浏览器（localStorage），<strong>不上传服务器</strong>。在任意文章里选中正文文字，点浮出的「📌 摘录」即可收藏。</p>
 
   <div class="cl-toolbar">
     <button id="cl-clear" class="cl-btn" type="button">清空全部</button>
@@ -12,7 +14,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   <ul id="cl-list" class="cl-list"></ul>
   <div id="cl-empty" class="empty-box" hidden>
-    <div class="empty-emoji">📌</div>
+    <div class="emoji">📌</div>
     <p>还没有摘录。打开任意文章，选中正文文字，点「📌 摘录」即可收藏。</p>
   </div>
 </BaseLayout>
@@ -57,8 +59,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </script>
 
 <style>
-  .cl-title { font-size: 28px; margin: 0 0 6px; }
-  .cl-sub { color: var(--muted); margin-top: 0; margin-bottom: 20px; font-size: 14px; }
   .cl-toolbar { margin-bottom: 16px; }
   .cl-btn {
     padding: 6px 14px;

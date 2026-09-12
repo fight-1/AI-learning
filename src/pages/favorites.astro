@@ -3,8 +3,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="收藏 · fight-1">
-  <h1>我的收藏</h1>
-  <p class="muted">本地收藏，只存在你的浏览器里，不会上传。</p>
+  <div class="page-head">
+    <h1>我的收藏</h1>
+    <span class="count">本地浏览器数据</span>
+    <div class="actions">
+      <a class="chip" href="/notes">去笔记页</a>
+    </div>
+  </div>
+  <p class="page-sub">本地收藏，只存在你的浏览器里，不会上传。</p>
 
   <div class="view-bar" role="group" aria-label="排列切换">
     <button type="button" data-view-btn="grid" class="on" aria-pressed="true" title="网格">▦ 网格</button>
@@ -12,35 +18,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </div>
 
   <div id="fav-list" class="grid" data-view="grid"></div>
-  <p id="empty" class="muted" hidden>还没有收藏。在任意笔记卡片上点 ☆ 即可加入。</p>
+  <div id="empty" class="empty-box" hidden>
+    <div class="emoji">☆</div>
+    <p class="eb-t">还没有收藏</p>
+    <p class="eb-s">在任意笔记卡片上点 ☆ 即可加入。</p>
+  </div>
 </BaseLayout>
 
 <style>
-  h1 { font-size: 26px; margin: 0 0 6px; }
-  .muted { color: var(--muted); }
-
-  /* 排列切换条 */
-  .view-bar {
-    display: flex;
-    gap: 6px;
-    margin: 18px 0 14px;
-  }
-  .view-bar button {
-    padding: 6px 14px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--muted);
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
-  }
-  .view-bar button.on {
-    color: var(--accent-color);
-    border-color: var(--accent-color);
-    background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
-  }
+  h1 { font-size: 22px; margin: 0; }
 
   /* 网格视图（默认） */
   #fav-list.grid {

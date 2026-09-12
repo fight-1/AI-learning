@@ -15,8 +15,11 @@ const cats = uniqueCategories(notes).map((c) => {
 ---
 
 <BaseLayout title="分类 · fight-1">
-  <h1>分类</h1>
-  <p class="muted">固定书架，共 {cats.length} 个。点「展开全部」可就地预览该分类的文章。</p>
+  <div class="page-head">
+    <h1>分类</h1>
+    <p class="count">共 {cats.length} 个</p>
+  </div>
+  <p class="page-sub">固定书架，点「展开全部」可就地预览该分类的文章。</p>
   <div class="list">
     {cats.map((c) => (
       <div class="row card" data-collapse="on" data-total={c.count}>
@@ -49,8 +52,6 @@ const cats = uniqueCategories(notes).map((c) => {
 </script>
 
 <style>
-  h1 { font-size: 26px; margin: 0 0 6px; }
-  .muted { color: var(--muted); margin-top: 0; }
   .list { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
   .row {
     display: flex;

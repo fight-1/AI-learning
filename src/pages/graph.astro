@@ -3,8 +3,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="知识图谱 · fight-1" description="标签关系力导向图，节点大小代表出现频次，连线代表同篇共现">
-  <h1>知识图谱</h1>
-  <p class="muted">标签关系力导向图：节点越大代表出现越多，连线越粗代表越常同篇出现。悬浮高亮邻居，点击跳转对应标签页。</p>
+  <div class="page-head">
+    <h1>知识图谱</h1>
+  </div>
+  <p class="page-sub">标签关系力导向图：节点越大代表出现越多，连线越粗代表越常同篇出现。悬浮高亮邻居，点击跳转对应标签页。</p>
 
   <div class="graph-bar">
     <span id="graph-info" class="gi">加载中…</span>
@@ -16,8 +18,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <style>
-  h1 { font-size: 26px; margin: 0 0 6px; }
-  .muted { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
   .graph-bar {
     display: flex;
     align-items: center;

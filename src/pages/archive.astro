@@ -19,8 +19,11 @@ const years = Object.keys(groups)
 ---
 
 <BaseLayout title="归档 · fight-1 的 AI 学习笔记" description="全部文章的年度归档，按时间倒序">
-  <h1 class="arch-title">归档</h1>
-  <p class="arch-sub">共 {notes.length} 篇 · 按发布时间倒序排列。</p>
+  <div class="page-head">
+    <h1>归档</h1>
+    <p class="count">共 {notes.length} 篇</p>
+  </div>
+  <p class="page-sub">按发布时间倒序排列。</p>
 
   {years.map((y) => {
     const items = groups[y];
@@ -54,8 +57,6 @@ const years = Object.keys(groups)
 </script>
 
 <style>
-  .arch-title { font-size: 28px; margin: 0 0 6px; }
-  .arch-sub { color: var(--muted); margin-top: 0; margin-bottom: 28px; font-size: 14px; }
   .year { margin-bottom: 30px; }
   .year-h {
     display: flex;

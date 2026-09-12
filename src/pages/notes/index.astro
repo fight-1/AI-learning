@@ -24,8 +24,10 @@ if (category) {
 <BaseLayout title={`${heading} · fight-1`}>
   <div class="page-head">
     <h1>{heading}</h1>
-    <p class="count">{filtered.length} 篇</p>
-    <a class="clear-filter" href="/notes" data-clear-filter hidden>✕ 查看全部笔记</a>
+    <span class="count" id="note-count">{filtered.length} 篇</span>
+    <div class="actions">
+      <a class="chip" id="clear-filter" href="/notes" data-clear-filter hidden>✕ 查看全部</a>
+    </div>
   </div>
 
   <div class="filters">
@@ -44,9 +46,14 @@ if (category) {
     </div>
   </div>
 
-  <div class="stage-bar">
+  <div class="view-bar" role="group" aria-label="排列切换">
+    <button type="button" data-view-btn="grid" class="on" aria-pressed="true" title="网格">▦ 网格</button>
+    <button type="button" data-view-btn="list" aria-pressed="false" title="简约列表">☰ 列表</button>
+  </div>
+
+  <div class="stage-bar" id="stage-bar">
     <span class="fl">舞台</span>
-    <button class="stage-btn active" data-stage="grid">网格</button>
+    <button class="stage-btn is-active" data-stage="grid">网格</button>
     <button class="stage-btn" data-stage="depth">纵深叠排</button>
     <button class="stage-btn" data-stage="fan">扇形</button>
     <button class="stage-btn" data-stage="cylinder">圆柱</button>
@@ -55,52 +62,17 @@ if (category) {
     <button class="stage-btn" data-stage="wave">波浪矩阵</button>
   </div>
 
-  <div class="grid stage-view">
+  <div class="stage-view grid" id="notes-view" data-view="grid">
     {filtered.map((n) => <NoteCard note={n} />)}
   </div>
 
-  {filtered.length === 0 && <p class="empty">没有匹配的笔记。</p>}
+  <p id="empty" class="empty-box" hidden>
+    <span class="emoji">🌑</span>
+    <span class="eb-t">没有匹配的笔记</span>
+  </p>
 </BaseLayout>
 
 <style>
-  .page-head {
-    position: sticky;
-    top: 64px;
-    z-index: 10;
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    margin-bottom: 16px;
-    padding: 10px 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    backdrop-filter: blur(8px);
-  }
-  .page-head h1 {
-    font-size: 22px;
-    margin: 0;
-  }
-  .page-head .count {
-    color: var(--muted);
-    font-size: 13px;
-    margin: 0;
-  }
-  .clear-filter {
-    margin-left: auto;
-    padding: 4px 12px;
-    border-radius: 999px;
-    border: 1px solid var(--accent-color);
-    background: transparent;
-    color: var(--accent-color);
-    font-size: 12px;
-    text-decoration: none;
-    transition: background 0.2s, color 0.2s;
-  }
-  .clear-filter:hover {
-    background: var(--accent-color);
-    color: var(--bg);
-  }
   .filters {
     display: flex;
     flex-direction: column;
@@ -109,7 +81,7 @@ if (category) {
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--surface);
-    margin-bottom: 22px;
+    margin-bottom: 14px;
   }
   .filter-row {
     display: flex;
@@ -124,34 +96,94 @@ if (category) {
     flex: none;
   }
   .chip.on {
-    color: var(--accent);
-    border-color: var(--accent);
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
   }
-  .stage-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
+  .stage-bar .fl { margin-right: 2px; }
+  #notes-view {
+    position: relative;
+    min-height: 60vh;
   }
-  .grid {
+  #notes-view.grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 16px;
   }
-  .empty {
-    color: var(--muted);
+  #notes-view.list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    perspective: none;
+    transform-style: flat;
+  }
+  /* 列表项 */
+  #notes-view.list .list-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-left: 3px solid transparent;
+    border-radius: 0 10px 10px 0;
+    background: var(--surface);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  #notes-view.list .list-item:hover {
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+    border-left-color: var(--accent);
+  }
+  #notes-view.list .list-item a {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #notes-view.list .list-item a:hover { color: var(--accent); }
+  #notes-view.list .li-meta { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  #notes-view.list .li-mat { font-size: 11px; }
+  @media (max-width: 560px) {
+    #notes-view.list .list-item { grid-template-columns: 1fr auto; }
+    #notes-view.list .li-mat { display: none; }
   }
 </style>
 
 <script>
   import { initStages } from '../../scripts/stages.js';
-  const view = document.querySelector('.stage-view');
-  const allCards = Array.from(view.querySelectorAll('.stage-card'));
-  const bar = document.querySelector('.stage-bar');
-  const h1 = document.querySelector('.page-head h1');
-  const countEl = document.querySelector('.page-head .count');
-  // 客户端筛选：静态页构建期 searchParams 无值，运行时根据 URL 过滤
+
+  const viewBox = document.getElementById('notes-view') as HTMLDivElement;
+  const stageBar = document.getElementById('stage-bar') as HTMLDivElement;
+  const h1 = document.querySelector('.page-head h1') as HTMLHeadingElement;
+  const countEl = document.getElementById('note-count') as HTMLSpanElement;
+  const clearA = document.getElementById('clear-filter') as HTMLAnchorElement;
+  const empty = document.getElementById('empty') as HTMLParagraphElement;
+  const btns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-view-btn]'));
+  const allCards = Array.from(viewBox.querySelectorAll<HTMLElement>('.stage-card'));
+  const KEY_VIEW = 'notes-view';
+  const POSKEY = 'notes:pos:' + location.pathname + location.search;
+
+  // 构建列表项 HTML（服务端已渲染网格，列表由客户端切换生成）
+  const listData = allCards.map((card) => ({
+    id: card.dataset.id || '',
+    title: card.querySelector('.note-title')?.textContent || '',
+    summary: card.querySelector('.note-sum')?.textContent || '',
+    category: card.dataset.category || '',
+    tags: (card.dataset.tags || '').split('|').filter(Boolean),
+    date: card.querySelector('.note-meta time')?.textContent || '',
+    maturity: card.querySelector('.mat-badge')?.getAttribute('data-mat') || 'growing',
+    url: card.closest('a')?.getAttribute('href') || '/notes/' + (card.dataset.id || ''),
+  }));
+
+  const MATURITY: Record<string, { label: string; icon: string }> = {
+    draft: { label: '草稿', icon: '🌱' },
+    growing: { label: '成长中', icon: '🌿' },
+    polished: { label: '已打磨', icon: '💎' },
+  };
+
   const params = new URLSearchParams(location.search);
   const tag = params.get('tag');
   const cat = params.get('category');
@@ -163,12 +195,11 @@ if (category) {
     visible = allCards.filter((c) => (c.dataset.tags || '').split('|').includes(tag));
     h1.textContent = `标签：#${tag}`;
   }
-  // 移除不匹配卡片
   allCards.forEach((c) => { if (!visible.includes(c)) c.remove(); });
   if (countEl) countEl.textContent = `${visible.length} 篇`;
-  // 显示清除筛选入口（HTML 默认 hidden，仅运行时按 URL 解开）
-  const cf = document.querySelector('[data-clear-filter]');
-  if (cf) cf.hidden = !(cat || tag);
+  if (empty) empty.hidden = visible.length > 0;
+  if (clearA) clearA.hidden = !(cat || tag);
+
   // 高亮当前筛选 chip
   const chips = document.querySelectorAll('.filter-row .chip');
   chips.forEach((a) => a.classList.remove('on'));
@@ -183,34 +214,77 @@ if (category) {
   } else {
     chips.forEach((a) => { if (a.getAttribute('href') === '/notes') a.classList.add('on'); });
   }
-  initStages(view, visible, bar);
 
-  // 返回定位记忆：点进具体笔记后再点「返回」，应回到离开前的滚动位置与舞台模式。
-  // 否则重载后 initStages 重置为网格模式，浏览器原生恢复会落到错误位置。
-  const POSKEY = 'notes:pos:' + location.pathname + location.search;
+  // 舞台初始化（只在网格视图需要）
+  initStages(viewBox, visible, stageBar);
+
+  function renderList() {
+    viewBox.innerHTML = listData
+      .filter((d) => visible.some((c) => c.dataset.id === d.id))
+      .map((d) => {
+        const m = MATURITY[d.maturity] || MATURITY.growing;
+        return `<article class="list-item" data-id="${d.id}">
+          <a href="${d.url}" data-astro-prefetch title="${d.title}">${d.title}</a>
+          <span class="li-meta"># ${d.category} · ${d.date}</span>
+          <span class="chip li-mat" data-mat="${d.maturity}">${m.icon} ${m.label}</span>
+        </article>`;
+      })
+      .join('');
+  }
+
+  function setView(view: 'grid' | 'list') {
+    viewBox.dataset.view = view;
+    localStorage.setItem(KEY_VIEW, view);
+    btns.forEach((b) => {
+      const on = b.dataset.viewBtn === view;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+
+    if (view === 'list') {
+      // 先确保舞台回到 grid（清理动态模式可能挂着的逐帧订阅），再清空为列表
+      const gridBtn = stageBar.querySelector<HTMLButtonElement>('[data-stage="grid"]');
+      if (gridBtn && !gridBtn.classList.contains('is-active')) gridBtn.click();
+      stageBar.hidden = true;
+      renderList();
+    } else {
+      stageBar.hidden = false;
+      // 还原网格 DOM（保留原始卡片）
+      viewBox.innerHTML = '';
+      allCards.forEach((c) => { if (visible.includes(c)) viewBox.appendChild(c); });
+      // 恢复当前舞台模式
+      const active = stageBar.querySelector<HTMLButtonElement>('.is-active');
+      if (active) active.click();
+    }
+  }
+
+  btns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.viewBtn as 'grid' | 'list')));
+
+  // 返回定位记忆
   try { history.scrollRestoration = 'manual'; } catch (e) {}
   function savePos() {
     try {
-      const b = bar.querySelector('.stage-btn.active');
-      sessionStorage.setItem(POSKEY, JSON.stringify({ y: window.scrollY, m: b ? b.dataset.stage : 'grid' }));
+      const mode = viewBox.dataset.view === 'list' ? 'list' : stageBar.querySelector('.is-active')?.getAttribute('data-stage') || 'grid';
+      sessionStorage.setItem(POSKEY, JSON.stringify({ y: window.scrollY, m: mode, v: viewBox.dataset.view }));
     } catch (e) {}
   }
-  // 离开 /notes（含点进笔记、切筛选）时记录；beforeunload 兜底
   window.addEventListener('pagehide', savePos);
   window.addEventListener('beforeunload', savePos);
-  // 切换舞台模式即时记模式（稍等 class 更新）
-  bar.addEventListener('click', () => setTimeout(savePos, 60));
+  stageBar.addEventListener('click', () => setTimeout(savePos, 60));
   function restorePos() {
-    let s = null;
+    let s: any = null;
     try { s = JSON.parse(sessionStorage.getItem(POSKEY) || 'null'); } catch (e) {}
     if (!s) return;
-    // 先还原舞台模式（不同模式高度不同），再恢复滚动
-    if (s.m && s.m !== 'grid') {
-      const btn = bar.querySelector(`[data-stage="${s.m}"]`);
-      if (btn) btn.click(); // 程序化点击 isTrusted=false，不触发自动滚动
+    if (s.v === 'list') {
+      setView('list');
+    } else if (s.m && s.m !== 'grid') {
+      const btn = stageBar.querySelector(`[data-stage="${s.m}"]`);
+      if (btn) (btn as HTMLButtonElement).click();
     }
     window.scrollTo({ top: s.y || 0, behavior: 'auto' });
   }
-  // 等布局稳定后恢复（grid 自然高度 / fan·depth 同步高度 / 动态模式已设高度）
   requestAnimationFrame(() => requestAnimationFrame(restorePos));
+
+  // 初始视图
+  setView((localStorage.getItem(KEY_VIEW) as 'grid' | 'list') || 'grid');
 </script>
