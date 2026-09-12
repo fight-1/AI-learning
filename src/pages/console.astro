@@ -181,6 +181,29 @@ const bgModes = {
       <span class="chint">改动即时生效，并记忆到本机</span>
     </div>
   </section>
+
+  <section class="panel">
+    <h2>🎨 阅读主题</h2>
+    <p class="sub">只改变文章正文的配色，不影响导航与全站外观。</p>
+    <div class="rt-opts" id="read-theme-opts">
+      <button class="opt" data-read-theme-set="default" type="button">跟随皮肤</button>
+      <button class="opt" data-read-theme-set="paper" type="button">纸书</button>
+      <button class="opt" data-read-theme-set="sepia" type="button">羊皮卷</button>
+      <button class="opt" data-read-theme-set="eye" type="button">护眼</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>⌨️ 快捷键</h2>
+    <p class="sub">点击右侧按键，再按下你想用的新键位即可（自动保存）。</p>
+    <div class="hk-row"><span class="hk-lab">专注阅读</span><button class="opt hk-btn" data-hk="focus" type="button">F</button></div>
+    <div class="hk-row"><span class="hk-lab">切换主题</span><button class="opt hk-btn" data-hk="theme" type="button">T</button></div>
+    <div class="hk-row"><span class="hk-lab">回到顶部</span><button class="opt hk-btn" data-hk="top" type="button">G</button></div>
+    <div class="cwheel-foot">
+      <button class="creset" id="hk-reset" type="button">↺ 恢复默认</button>
+      <span class="chint">按 <code>/</code> 搜索、<code>?</code> 查看全部快捷键</span>
+    </div>
+  </section>
 </BaseLayout>
 
 <style>
@@ -235,6 +258,10 @@ const bgModes = {
     font-size: 12px;
     color: var(--text);
   }
+  .rt-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .hk-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .hk-lab { flex: 1; font-size: 13px; color: var(--muted); }
+  .hk-btn { min-width: 58px; font-family: var(--font-mono); }
   /* 阅读设置实时预览（与文章正文共用 CSS 变量） */
   .read-preview {
     margin: 4px 0 14px;
@@ -475,4 +502,51 @@ const bgModes = {
     }
     applyRead();
   }
+</script>
+
+<script>
+  // 阅读主题预设 + 快捷键自定义
+  (function () {
+    // ---- 阅读主题：只改正文区配色 ----
+    const RT_KEY = 'read-theme';
+    const rtBtns = Array.from(document.querySelectorAll('[data-read-theme-set]'));
+    function applyRT(v) {
+      const cur = v || 'default';
+      document.documentElement.setAttribute('data-read-theme', cur);
+      rtBtns.forEach((b) => b.classList.toggle('is-active', b.getAttribute('data-read-theme-set') === cur));
+    }
+    rtBtns.forEach((b) =>
+      b.addEventListener('click', () => {
+        const v = b.getAttribute('data-read-theme-set');
+        try { localStorage.setItem(RT_KEY, v); } catch (e) {}
+        applyRT(v);
+      })
+    );
+    applyRT(localStorage.getItem(RT_KEY) || 'default');
+
+    // ---- 快捷键自定义（真实映射由 BaseLayout 持有，这里只改配置） ----
+    const hkBtns = Array.from(document.querySelectorAll('[data-hk]'));
+    function paintHK() {
+      const hk = (window.__getHotkeys && window.__getHotkeys()) || { focus: 'f', theme: 't', top: 'g' };
+      hkBtns.forEach((b) => { b.textContent = (hk[b.dataset.hk] || '-').toUpperCase(); });
+    }
+    hkBtns.forEach((b) => {
+      b.addEventListener('click', () => {
+        const action = b.dataset.hk;
+        b.textContent = '按下…';
+        const onKey = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const k = (e.key || '').toLowerCase();
+          if (k && k !== 'escape') window.__setHotkey && window.__setHotkey(action, k);
+          document.removeEventListener('keydown', onKey, true);
+          paintHK();
+        };
+        document.addEventListener('keydown', onKey, true);
+      });
+    });
+    const hkReset = document.getElementById('hk-reset');
+    if (hkReset) hkReset.addEventListener('click', () => { window.__resetHotkeys && window.__resetHotkeys(); paintHK(); });
+    paintHK();
+  })();
 </script>

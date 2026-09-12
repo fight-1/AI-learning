@@ -1087,6 +1087,29 @@ html.custom-cursor * {
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
 }
 
+/* 阅读主题预设：只改正文区配色（控制台「🎨 阅读主题」切换 → html[data-read-theme]）。
+   必须用 html 前缀 + !important：各页 scoped 的 .prose / .read-preview 也定义了背景，
+   特异性相同且后加载，会把这里的规则盖掉。 */
+html[data-read-theme='paper'] .prose,
+html[data-read-theme='paper'] .read-preview,
+html[data-read-theme='sepia'] .prose,
+html[data-read-theme='sepia'] .read-preview,
+html[data-read-theme='eye'] .prose,
+html[data-read-theme='eye'] .read-preview {
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+html[data-read-theme='paper'] .prose,
+html[data-read-theme='paper'] .read-preview { background: #ffffff !important; color: #1f2328 !important; }
+html[data-read-theme='sepia'] .prose,
+html[data-read-theme='sepia'] .read-preview { background: #f6ecd9 !important; color: #40341f !important; }
+html[data-read-theme='eye'] .prose,
+html[data-read-theme='eye'] .read-preview { background: #ddead6 !important; color: #1e3a26 !important; }
+html[data-read-theme='paper'] .prose a,
+html[data-read-theme='sepia'] .prose a,
+html[data-read-theme='eye'] .prose a { color: inherit !important; text-decoration: underline; }
+
 /* —— 6 舞台卡片形变（规格书 §二.3） —— */
 .stage-bar { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
 .stage-btn {

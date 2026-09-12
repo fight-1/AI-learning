@@ -71,6 +71,8 @@ const websiteLd = {
           if (rs) root.style.setProperty('--read-font-size', rs + 'px');
           if (rl) root.style.setProperty('--read-line-height', rl);
           if (rw) root.style.setProperty('--read-weight', rw);
+          // 阅读主题预设（只影响正文区配色，控制台可切换）
+          root.setAttribute('data-read-theme', localStorage.getItem('read-theme') || 'default');
           // 首次进入若没有记忆的背景，按皮肤×明暗选最契合的默认（避免 FOUC）
           var bgMap = {
             cosmic:  { dark: 'constellation', light: 'constellation' },
@@ -211,16 +213,43 @@ const websiteLd = {
       })();
 
       // 快捷键面板：? 打开一览；F 专注阅读 / T 切换主题 / G 回顶部 / Esc 关闭
+      // 键位可在控制台「⌨️ 快捷键」自定义，存 localStorage.hotkeys
       (function () {
-        const ROWS = [
-          ['/', '聚焦搜索（站内全文检索）'],
-          ['F', '切换专注阅读模式'],
-          ['T', '循环切换 深色 / 浅色 / 跟随系统'],
-          ['G', '回到顶部'],
-          ['?', '打开 / 关闭本面板'],
-          ['Esc', '关闭面板'],
-        ];
+        const HK_KEY = 'hotkeys';
+        const HK_DEF = { focus: 'f', theme: 't', top: 'g' };
+        const loadHK = () => {
+          try {
+            return Object.assign({}, HK_DEF, JSON.parse(localStorage.getItem(HK_KEY)) || {});
+          } catch (e) {
+            return Object.assign({}, HK_DEF);
+          }
+        };
+        let hk = loadHK();
+        window.__getHotkeys = () => Object.assign({}, hk);
+        window.__setHotkey = (action, key) => {
+          if (!(action in HK_DEF) || !key) return false;
+          hk[action] = String(key).toLowerCase();
+          try { localStorage.setItem(HK_KEY, JSON.stringify(hk)); } catch (e) {}
+          if (box) { close(); open(); }
+          return true;
+        };
+        window.__resetHotkeys = () => {
+          hk = Object.assign({}, HK_DEF);
+          try { localStorage.removeItem(HK_KEY); } catch (e) {}
+          if (box) { close(); open(); }
+          return Object.assign({}, hk);
+        };
         let box = null;
+        function rows() {
+          return [
+            ['/', '聚焦搜索（站内全文检索）'],
+            [(hk.focus || 'f').toUpperCase(), '切换专注阅读模式'],
+            [(hk.theme || 't').toUpperCase(), '循环切换 深色 / 浅色 / 跟随系统'],
+            [(hk.top || 'g').toUpperCase(), '回到顶部'],
+            ['?', '打开 / 关闭本面板'],
+            ['Esc', '关闭面板'],
+          ];
+        }
         function close() {
           if (box) { box.remove(); box = null; }
         }
@@ -230,8 +259,8 @@ const websiteLd = {
           box.className = 'shortcut-help';
           box.innerHTML =
             '<div class="sh-card" role="dialog" aria-label="快捷键一览"><h3>⌨️ 快捷键</h3><ul>' +
-            ROWS.map((r) => '<li><kbd>' + r[0] + '</kbd><span>' + r[1] + '</span></li>').join('') +
-            '</ul><p class="sh-foot">按 Esc 或点击空白处关闭</p></div>';
+            rows().map((r) => '<li><kbd>' + r[0] + '</kbd><span>' + r[1] + '</span></li>').join('') +
+            '</ul><p class="sh-foot">按 Esc 或点击空白处关闭 · 可在控制台自定义</p></div>';
           box.addEventListener('click', (ev) => { if (ev.target === box) close(); });
           document.body.appendChild(box);
         }
@@ -241,12 +270,13 @@ const websiteLd = {
           if (e.key === '?' || (e.key === '/' && e.shiftKey)) { e.preventDefault(); box ? close() : open(); return; }
           if (e.key === 'Escape') { close(); return; }
           if (box) return;
-          if (e.key === 'f' || e.key === 'F') {
+          const k = (e.key || '').toLowerCase();
+          if (k === hk.focus) {
             if (window.__setFocus) window.__setFocus(document.documentElement.getAttribute('data-focus') !== 'on');
-          } else if (e.key === 't' || e.key === 'T') {
+          } else if (k === hk.theme) {
             const b = document.querySelector('[data-theme-toggle]');
             if (b) b.click();
-          } else if (e.key === 'g' || e.key === 'G') {
+          } else if (k === hk.top) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         });
