@@ -109,7 +109,11 @@ export function initComm() {
       const has = cur.includes(id);
       const next = has ? cur.filter((x) => x !== id) : [id, ...cur];
       setFavs(next);
-      fb.textContent = has ? '☆ 收藏' : '★ 已收藏';
+      const fbIcon = fb.querySelector('.fav-icon');
+      const fbText = fb.querySelector('.fav-text');
+      if (fbIcon) fbIcon.textContent = has ? '☆' : '★';
+      if (fbText) fbText.textContent = has ? '收藏' : '已收藏';
+      if (!fbIcon && !fbText) fb.textContent = has ? '☆ 收藏' : '★ 已收藏';
       fb.classList.toggle('on', !has);
       blipThrottled(has ? 380 : 720, panFromX(e.clientX));
       return;
@@ -137,7 +141,11 @@ export function initComm() {
     document.querySelectorAll('[data-fav]').forEach((b) => {
       const on = favs.includes(b.dataset.fav);
       b.classList.toggle('on', on);
-      if (!b.classList.contains('fav-inline')) b.textContent = on ? '★ 已收藏' : '☆ 收藏';
+      const icon = b.querySelector('.fav-icon');
+      const text = b.querySelector('.fav-text');
+      if (icon) icon.textContent = on ? '★' : '☆';
+      if (text) text.textContent = on ? '已收藏' : '收藏';
+      if (!icon && !text && !b.classList.contains('fav-inline')) b.textContent = on ? '★ 已收藏' : '☆ 收藏';
     });
   };
   syncFavBtns();

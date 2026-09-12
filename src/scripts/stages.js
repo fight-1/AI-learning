@@ -13,11 +13,11 @@
 import gsap from 'gsap';
 import { onTick, reduceMotion } from '../lib/universe.js';
 
-const MODES = ['grid', 'depth', 'fan', 'cylinder', 'sphere', 'spiral', 'wave'];
+const MODES = ['grid', 'list', 'depth', 'fan', 'cylinder', 'sphere', 'spiral', 'wave'];
 const CW = 240; // 卡片宽
 const CH = 190; // 卡片估算高（用于行距/层距）
 
-export function initStages(view, cards, bar) {
+export function initStages(view, cards, bar, opts = {}) {
   if (!cards.length) return;
   let mode = 'grid';
   let spin = 0;
@@ -222,8 +222,25 @@ export function initStages(view, cards, bar) {
     if (!b) return;
     const m = b.dataset.stage;
     if (!MODES.includes(m) || m === mode) return;
+    const wasList = mode === 'list';
+    const isList = m === 'list';
     mode = m;
-    bar.querySelectorAll('[data-stage]').forEach((x) => x.classList.toggle('active', x === b));
+    bar.querySelectorAll('[data-stage]').forEach((x) => x.classList.toggle('is-active', x === b));
+
+    if (isList) {
+      if (unsub) { unsub(); unsub = null; }
+      view.style.height = '';
+      if (opts.enterList) opts.enterList();
+      if (e.isTrusted) {
+        requestAnimationFrame(() => {
+          view.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+      return;
+    }
+
+    if (wasList && opts.leaveList) opts.leaveList();
+
     const dynamic = ['cylinder', 'sphere', 'spiral', 'wave'].includes(m);
     if (dynamic) {
       if (!unsub) unsub = onTick(tick);
@@ -233,7 +250,7 @@ export function initStages(view, cards, bar) {
     }
     layout(m); // 先定位容器 left/top 与高度
     if (dynamic) tick(0.016); // 立即逐帧定位，避免切换瞬间闪烁
-    // 仅真实用户点击才把舞台滚到视口顶部（避开粘性导航）；
+    // 仅真实用户点击才把舞台滚到视口顶部（避开粘性导航）;
     // 程序化触发(isTrusted=false，用于返回时还原舞台模式)不要自动滚动，以免覆盖滚动记忆
     if (e.isTrusted) {
       requestAnimationFrame(() => {

@@ -28,9 +28,11 @@ const mat = MATURITY[note.data.maturity || 'growing'];
   </a>
   <div class="card-actions">
     <button class="like-btn" type="button" data-like={note.id} aria-label="注入能量">
-      <span class="reactor">⚛</span> 能量
+      <span class="reactor">⚡</span> 能量
     </button>
-    <button class="fav-btn" type="button" data-fav={note.id}>☆ 收藏</button>
+    <button class="fav-btn" type="button" data-fav={note.id}>
+      <span class="fav-icon">☆</span><span class="fav-text">收藏</span>
+    </button>
   </div>
 </article>
 
@@ -144,26 +146,30 @@ const mat = MATURITY[note.data.maturity || 'growing'];
   /* 操作区：卡片底部一行，避免绝对定位遮挡标题 */
   .card-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     padding: 0 18px 14px;
   }
   .card-actions button {
     position: static;
     transform: none;
-    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
     border-radius: 999px;
     border: 1px solid var(--border);
     background: var(--surface-2);
     color: var(--muted);
-    font-size: 12px;
+    font-size: 11px;
     font-family: inherit;
     cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
   }
   .card-actions button:hover {
     color: var(--accent-color);
     border-color: var(--accent-color);
   }
-  .card-actions .like-btn .reactor { font-size: 12px; }
+  .card-actions .like-btn .reactor { font-size: 11px; }
   .card-actions .fav-btn.on { color: var(--accent-2); border-color: var(--accent-2); }
   .card-actions .like-btn.liked { color: var(--accent-color); border-color: var(--accent-color); }
 </style>

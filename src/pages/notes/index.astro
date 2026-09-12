@@ -46,20 +46,16 @@ if (category) {
     </div>
   </div>
 
-  <div class="view-bar" role="group" aria-label="排列切换">
-    <button type="button" data-view-btn="grid" class="on" aria-pressed="true" title="网格">▦ 网格</button>
-    <button type="button" data-view-btn="list" aria-pressed="false" title="简约列表">☰ 列表</button>
-  </div>
-
-  <div class="stage-bar" id="stage-bar">
+  <div class="stage-bar" id="stage-bar" role="group" aria-label="舞台模式">
     <span class="fl">舞台</span>
-    <button class="stage-btn is-active" data-stage="grid">网格</button>
-    <button class="stage-btn" data-stage="depth">纵深叠排</button>
-    <button class="stage-btn" data-stage="fan">扇形</button>
-    <button class="stage-btn" data-stage="cylinder">圆柱</button>
-    <button class="stage-btn" data-stage="sphere">球面</button>
-    <button class="stage-btn" data-stage="spiral">螺旋</button>
-    <button class="stage-btn" data-stage="wave">波浪矩阵</button>
+    <button class="stage-btn is-active" data-stage="grid">▦ 网格</button>
+    <button class="stage-btn" data-stage="list">☰ 列表</button>
+    <button class="stage-btn" data-stage="fan">⌒ 扇形</button>
+    <button class="stage-btn" data-stage="depth">▣ 纵深叠排</button>
+    <button class="stage-btn" data-stage="cylinder">◯ 圆柱</button>
+    <button class="stage-btn" data-stage="sphere">○ 球面</button>
+    <button class="stage-btn" data-stage="spiral">⟲ 螺旋</button>
+    <button class="stage-btn" data-stage="wave">∿ 波浪矩阵</button>
   </div>
 
   <div class="stage-view grid" id="notes-view" data-view="grid">
@@ -113,20 +109,20 @@ if (category) {
   #notes-view.list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     perspective: none;
     transform-style: flat;
   }
-  /* 列表项 */
+  /* 列表项：一行一个，横向信息带 */
   #notes-view.list .list-item {
     display: grid;
     grid-template-columns: 1fr auto auto;
     align-items: center;
     gap: 14px;
-    padding: 11px 14px;
+    padding: 12px 16px;
     border: 1px solid var(--border);
     border-left: 3px solid transparent;
-    border-radius: 0 10px 10px 0;
+    border-radius: 0 12px 12px 0;
     background: var(--surface);
     transition: background 0.15s, border-color 0.15s;
   }
@@ -144,11 +140,21 @@ if (category) {
     text-overflow: ellipsis;
   }
   #notes-view.list .list-item a:hover { color: var(--accent); }
-  #notes-view.list .li-meta { color: var(--muted); font-size: 12px; white-space: nowrap; }
-  #notes-view.list .li-mat { font-size: 11px; }
-  @media (max-width: 560px) {
-    #notes-view.list .list-item { grid-template-columns: 1fr auto; }
-    #notes-view.list .li-mat { display: none; }
+  #notes-view.list .li-meta {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #notes-view.list .li-mat {
+    font-size: 11px;
+    flex: none;
+  }
+  @media (max-width: 640px) {
+    #notes-view.list .list-item { grid-template-columns: 1fr auto; gap: 10px; }
+    #notes-view.list .li-meta { display: none; }
   }
 </style>
 
@@ -161,12 +167,16 @@ if (category) {
   const countEl = document.getElementById('note-count') as HTMLSpanElement;
   const clearA = document.getElementById('clear-filter') as HTMLAnchorElement;
   const empty = document.getElementById('empty') as HTMLParagraphElement;
-  const btns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-view-btn]'));
   const allCards = Array.from(viewBox.querySelectorAll<HTMLElement>('.stage-card'));
-  const KEY_VIEW = 'notes-view';
+  const STAGE_KEY = 'notes-stage';
   const POSKEY = 'notes:pos:' + location.pathname + location.search;
 
-  // 构建列表项 HTML（服务端已渲染网格，列表由客户端切换生成）
+  const MATURITY: Record<string, { label: string; icon: string }> = {
+    draft: { label: '草稿', icon: '🌱' },
+    growing: { label: '成长中', icon: '🌿' },
+    polished: { label: '已打磨', icon: '💎' },
+  };
+
   const listData = allCards.map((card) => ({
     id: card.dataset.id || '',
     title: card.querySelector('.note-title')?.textContent || '',
@@ -178,45 +188,36 @@ if (category) {
     url: card.closest('a')?.getAttribute('href') || '/notes/' + (card.dataset.id || ''),
   }));
 
-  const MATURITY: Record<string, { label: string; icon: string }> = {
-    draft: { label: '草稿', icon: '🌱' },
-    growing: { label: '成长中', icon: '🌿' },
-    polished: { label: '已打磨', icon: '💎' },
-  };
-
   const params = new URLSearchParams(location.search);
-  const tag = params.get('tag');
-  const cat = params.get('category');
+  const qTag = params.get('tag');
+  const qCat = params.get('category');
   let visible = allCards;
-  if (cat) {
-    visible = allCards.filter((c) => c.dataset.category === cat);
-    h1.textContent = `分类：${cat}`;
-  } else if (tag) {
-    visible = allCards.filter((c) => (c.dataset.tags || '').split('|').includes(tag));
-    h1.textContent = `标签：#${tag}`;
+  if (qCat) {
+    visible = allCards.filter((c) => c.dataset.category === qCat);
+    h1.textContent = `分类：${qCat}`;
+  } else if (qTag) {
+    visible = allCards.filter((c) => (c.dataset.tags || '').split('|').includes(qTag));
+    h1.textContent = `标签：#${qTag}`;
   }
   allCards.forEach((c) => { if (!visible.includes(c)) c.remove(); });
   if (countEl) countEl.textContent = `${visible.length} 篇`;
   if (empty) empty.hidden = visible.length > 0;
-  if (clearA) clearA.hidden = !(cat || tag);
+  if (clearA) clearA.hidden = !(qCat || qTag);
 
   // 高亮当前筛选 chip
   const chips = document.querySelectorAll('.filter-row .chip');
   chips.forEach((a) => a.classList.remove('on'));
-  if (cat) {
+  if (qCat) {
     chips.forEach((a) => {
-      if (a.getAttribute('href') === '/notes?category=' + encodeURIComponent(cat)) a.classList.add('on');
+      if (a.getAttribute('href') === '/notes?category=' + encodeURIComponent(qCat)) a.classList.add('on');
     });
-  } else if (tag) {
+  } else if (qTag) {
     chips.forEach((a) => {
-      if (a.getAttribute('href') === '/notes?tag=' + encodeURIComponent(tag)) a.classList.add('on');
+      if (a.getAttribute('href') === '/notes?tag=' + encodeURIComponent(qTag)) a.classList.add('on');
     });
   } else {
     chips.forEach((a) => { if (a.getAttribute('href') === '/notes') a.classList.add('on'); });
   }
-
-  // 舞台初始化（只在网格视图需要）
-  initStages(viewBox, visible, stageBar);
 
   function renderList() {
     viewBox.innerHTML = listData
@@ -225,47 +226,39 @@ if (category) {
         const m = MATURITY[d.maturity] || MATURITY.growing;
         return `<article class="list-item" data-id="${d.id}">
           <a href="${d.url}" data-astro-prefetch title="${d.title}">${d.title}</a>
-          <span class="li-meta"># ${d.category} · ${d.date}</span>
+          <span class="li-meta"><span class="chip cat-chip"># ${d.category}</span><time>${d.date}</time></span>
           <span class="chip li-mat" data-mat="${d.maturity}">${m.icon} ${m.label}</span>
         </article>`;
       })
       .join('');
   }
 
-  function setView(view: 'grid' | 'list') {
-    viewBox.dataset.view = view;
-    localStorage.setItem(KEY_VIEW, view);
-    btns.forEach((b) => {
-      const on = b.dataset.viewBtn === view;
-      b.classList.toggle('on', on);
-      b.setAttribute('aria-pressed', String(on));
-    });
-
-    if (view === 'list') {
-      // 先确保舞台回到 grid（清理动态模式可能挂着的逐帧订阅），再清空为列表
-      const gridBtn = stageBar.querySelector<HTMLButtonElement>('[data-stage="grid"]');
-      if (gridBtn && !gridBtn.classList.contains('is-active')) gridBtn.click();
-      stageBar.hidden = true;
-      renderList();
-    } else {
-      stageBar.hidden = false;
-      // 还原网格 DOM（保留原始卡片）
-      viewBox.innerHTML = '';
-      allCards.forEach((c) => { if (visible.includes(c)) viewBox.appendChild(c); });
-      // 恢复当前舞台模式
-      const active = stageBar.querySelector<HTMLButtonElement>('.is-active');
-      if (active) active.click();
-    }
+  function enterList() {
+    viewBox.dataset.view = 'list';
+    viewBox.classList.remove('grid');
+    viewBox.classList.add('list');
+    renderList();
+    localStorage.setItem(STAGE_KEY, 'list');
   }
 
-  btns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.viewBtn as 'grid' | 'list')));
+  function leaveList() {
+    viewBox.dataset.view = 'grid';
+    viewBox.classList.remove('list');
+    viewBox.classList.add('grid');
+    viewBox.innerHTML = '';
+    visible.forEach((c) => viewBox.appendChild(c));
+  }
+
+  // 舞台初始化（grid/fan/depth/cylinder/sphere/spiral/wave）
+  initStages(viewBox, visible, stageBar, { enterList, leaveList });
 
   // 返回定位记忆
   try { history.scrollRestoration = 'manual'; } catch (e) {}
   function savePos() {
     try {
-      const mode = viewBox.dataset.view === 'list' ? 'list' : stageBar.querySelector('.is-active')?.getAttribute('data-stage') || 'grid';
-      sessionStorage.setItem(POSKEY, JSON.stringify({ y: window.scrollY, m: mode, v: viewBox.dataset.view }));
+      const stageBtn = stageBar.querySelector('.is-active');
+      const stage = stageBtn?.getAttribute('data-stage') || 'grid';
+      sessionStorage.setItem(POSKEY, JSON.stringify({ y: window.scrollY, stage }));
     } catch (e) {}
   }
   window.addEventListener('pagehide', savePos);
@@ -274,17 +267,17 @@ if (category) {
   function restorePos() {
     let s: any = null;
     try { s = JSON.parse(sessionStorage.getItem(POSKEY) || 'null'); } catch (e) {}
-    if (!s) return;
-    if (s.v === 'list') {
-      setView('list');
-    } else if (s.m && s.m !== 'grid') {
-      const btn = stageBar.querySelector(`[data-stage="${s.m}"]`);
-      if (btn) (btn as HTMLButtonElement).click();
+    if (!s) {
+      // 无返回记忆时按持久化舞台初始化
+      applyStage(localStorage.getItem(STAGE_KEY) || 'grid');
+      return;
     }
+    applyStage(s.stage || 'grid');
     window.scrollTo({ top: s.y || 0, behavior: 'auto' });
   }
+  function applyStage(stage: string) {
+    const btn = stageBar.querySelector<HTMLButtonElement>(`[data-stage="${stage}"]`);
+    if (btn) btn.click();
+  }
   requestAnimationFrame(() => requestAnimationFrame(restorePos));
-
-  // 初始视图
-  setView((localStorage.getItem(KEY_VIEW) as 'grid' | 'list') || 'grid');
 </script>

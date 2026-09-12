@@ -8,17 +8,19 @@ export function initGraph() {
   const resetBtn = document.getElementById('graph-reset');
 
   const NS = 'http://www.w3.org/2000/svg';
-  let W = wrap.clientWidth || 800;
+  let W = (wrap.getBoundingClientRect().width || wrap.clientWidth) || 800;
   let H = Math.max(360, Math.min(640, Math.round(W * 0.62)));
 
   let nodes = [];
   let edges = [];
   let adj = new Map();
   let raf = 0;
-  const sim = { a: 0.02, rep: 1400, damp: 0.85, min: 0.4 };
+  let ticks = 0;
+  const sim = { a: 0.025, rep: 520, damp: 0.89, min: 0.35 };
 
   function resize() {
-    W = wrap.clientWidth || W;
+    const rect = wrap.getBoundingClientRect();
+    W = rect.width || W;
     H = Math.max(360, Math.min(640, Math.round(W * 0.62)));
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   }
@@ -28,15 +30,18 @@ export function initGraph() {
   }
 
   function build(data) {
-    nodes = data.nodes.map((n, i) => ({
-      id: n.id,
-      count: n.count,
-      r: 6 + Math.sqrt(n.count) * 3.2,
-      x: W / 2 + Math.cos((i / data.nodes.length) * Math.PI * 2) * 120 + (Math.random() - 0.5) * 40,
-      y: H / 2 + Math.sin((i / data.nodes.length) * Math.PI * 2) * 120 + (Math.random() - 0.5) * 40,
-      vx: 0,
-      vy: 0,
-    }));
+    const count = data.nodes.length || 1;
+    nodes = data.nodes
+      .map((n, i) => ({
+        id: n.id,
+        count: n.count,
+        r: 7 + Math.sqrt(n.count) * 3.4,
+        x: W / 2 + Math.cos((i / count) * Math.PI * 2) * (Math.min(W, H) * 0.22) + (Math.random() - 0.5) * 30,
+        y: H / 2 + Math.sin((i / count) * Math.PI * 2) * (Math.min(W, H) * 0.22) + (Math.random() - 0.5) * 30,
+        vx: 0,
+        vy: 0,
+      }))
+      .sort((a, b) => b.count - a.count);
     const idx = new Map(nodes.map((n, i) => [n.id, i]));
     edges = data.edges
       .filter(([a, b]) => idx.has(data.nodes[a].id) && idx.has(data.nodes[b].id))
@@ -46,6 +51,7 @@ export function initGraph() {
       adj.get(nodes[e.a].id).add(nodes[e.b].id);
       adj.get(nodes[e.b].id).add(nodes[e.a].id);
     });
+    ticks = 0;
     render();
     showInfo(`${nodes.length} 个标签 · ${edges.length} 条关联 · 悬浮高亮邻居`);
     loop();
@@ -125,44 +131,72 @@ export function initGraph() {
   }
 
   function step() {
+    const pad = 18;
+    const cx = W / 2;
+    const cy = H / 2;
+    // 前 120 帧中心引力更强，帮助从初始紧凑圆环快速展开到画布中央
+    const centerK = sim.a * (ticks < 120 ? 2.2 : 1.0);
+
+    nodes.forEach((n) => {
+      n.fx = (cx - n.x) * centerK;
+      n.fy = (cy - n.y) * centerK;
+    });
+
     for (let i = 0; i < nodes.length; i++) {
       const a = nodes[i];
-      let fx = (W / 2 - a.x) * sim.a;
-      let fy = (H / 2 - a.y) * sim.a;
-      for (let j = 0; j < nodes.length; j++) {
-        if (i === j) continue;
+      for (let j = i + 1; j < nodes.length; j++) {
         const b = nodes[j];
-        let dx = a.x - b.x,
-          dy = a.y - b.y;
-        let d2 = dx * dx + dy * dy + 0.01;
-        const f = sim.rep / d2;
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        let d2 = dx * dx + dy * dy;
+        if (d2 < 0.001) { d2 = 0.001; dx = 0.7; dy = 0.7; }
         const d = Math.sqrt(d2);
-        fx += (dx / d) * f;
-        fy += (dy / d) * f;
+        const minD = a.r + b.r + 10;
+        const rep = sim.rep * (1 + (a.count + b.count) * 0.05);
+        const f = (d < minD ? rep * 2.5 : rep) / d2;
+        const ux = dx / d;
+        const uy = dy / d;
+        a.fx += ux * f;
+        a.fy += uy * f;
+        b.fx -= ux * f;
+        b.fy -= uy * f;
       }
-      a.vx = (a.vx + fx) * sim.damp;
-      a.vy = (a.vy + fy) * sim.damp;
     }
+
     edges.forEach((e) => {
-      const a = nodes[e.a],
-        b = nodes[e.b];
-      let dx = b.x - a.x,
-        dy = b.y - a.y;
+      const a = nodes[e.a];
+      const b = nodes[e.b];
+      let dx = b.x - a.x;
+      let dy = b.y - a.y;
       const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
-      const f = (d - 90) * sim.a * (0.5 + e.w * 0.5);
-      const ux = dx / d,
-        uy = dy / d;
-      a.vx += ux * f;
-      a.vy += uy * f;
-      b.vx -= ux * f;
-      b.vy -= uy * f;
+      const ideal = a.r + b.r + 42 + e.w * 18;
+      const f = (d - ideal) * sim.a * (0.45 + e.w * 0.55);
+      const ux = dx / d;
+      const uy = dy / d;
+      a.fx += ux * f;
+      a.fy += uy * f;
+      b.fx -= ux * f;
+      b.fy -= uy * f;
     });
+
     nodes.forEach((n) => {
-      n.x += Math.max(-20, Math.min(20, n.vx));
-      n.y += Math.max(-20, Math.min(20, n.vy));
-      n.x = Math.max(n.r + 4, Math.min(W - n.r - 4, n.x));
-      n.y = Math.max(n.r + 4, Math.min(H - n.r - 4, n.y));
+      n.vx = (n.vx + n.fx) * sim.damp;
+      n.vy = (n.vy + n.fy) * sim.damp;
+      const speed = Math.hypot(n.vx, n.vy);
+      const limit = ticks < 160 ? 14 : 8;
+      const s = speed > limit ? limit / speed : 1;
+      n.x += n.vx * s;
+      n.y += n.vy * s;
+      // 软边界：贴边时施加反向力，避免堆在某一侧
+      if (n.x < pad + n.r) n.vx += (pad + n.r - n.x) * 0.04;
+      if (n.x > W - pad - n.r) n.vx -= (n.x - (W - pad - n.r)) * 0.04;
+      if (n.y < pad + n.r) n.vy += (pad + n.r - n.y) * 0.04;
+      if (n.y > H - pad - n.r) n.vy -= (n.y - (H - pad - n.r)) * 0.04;
+      n.x = Math.max(pad, Math.min(W - pad, n.x));
+      n.y = Math.max(pad, Math.min(H - pad, n.y));
     });
+
+    ticks++;
   }
 
   function loop() {
@@ -183,8 +217,8 @@ export function initGraph() {
     .then(build)
     .catch(() => showInfo('图谱数据加载失败（构建后才会生成）。'));
 
-  // 模拟运行 6 秒后自动停止，省电；悬浮时重启
-  let stopAt = Date.now() + 6000;
+  // 模拟运行 8 秒后自动停止，省电；悬浮时重启
+  let stopAt = Date.now() + 8000;
   (function autoStop() {
     if (Date.now() > stopAt && raf) {
       cancelAnimationFrame(raf);
@@ -195,7 +229,7 @@ export function initGraph() {
   })();
   wrap.addEventListener('mouseenter', () => {
     if (!raf) {
-      stopAt = Date.now() + 6000;
+      stopAt = Date.now() + 8000;
       loop();
     }
   });
